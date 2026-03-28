@@ -11,13 +11,14 @@
     <canvas id="canvas"></canvas>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script>
-        
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
+        
         const socket = io('https://sporld-server.onrender.com');
 
+        // Name prompt
         const myName = prompt("Enter any name:") || "Guest";
-socket.emit('join', myName);
+        socket.emit('join', myName);
 
         let players = {};
         let myPos = { x: 1000, y: 1000 };
@@ -35,6 +36,7 @@ socket.emit('join', myName);
         window.onkeydown = e => { keys[e.key.toLowerCase()] = true; };
         window.onkeyup = e => { keys[e.key.toLowerCase()] = false; };
 
+        // Movement!
         setInterval(() => {
             let moved = false;
             if (keys.w || keys.arrowup)    { myPos.y -= SPEED; moved = true; }
@@ -45,30 +47,24 @@ socket.emit('join', myName);
             if (moved) {
                 myPos.x = Math.max(0, Math.min(MAP_SIZE, myPos.x));
                 myPos.y = Math.max(0, Math.min(MAP_SIZE, myPos.y));
-
                 socket.emit('move', { x: myPos.x, y: myPos.y });
             }
         }, 16);
 
-        socket.on('update', data => { 
-            players = data; 
-        });
+        socket.on('update', data => { players = data; });
 
         function render() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // World to camera pos
             ctx.save();
             ctx.translate(canvas.width/2 - myPos.x, canvas.height/2 - myPos.y);
 
-            // Grid
+            // Grid and border
             ctx.strokeStyle = "#333";
-            ctx.lineWidth = 1;
             for(let i=0; i<=MAP_SIZE; i+=100){
                 ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,MAP_SIZE); ctx.stroke();
                 ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(MAP_SIZE,i); ctx.stroke();
             }
-
             ctx.strokeStyle = "white";
             ctx.lineWidth = 5;
             ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
@@ -82,23 +78,26 @@ socket.emit('join', myName);
                 ctx.arc(p.x, p.y, 15, 0, Math.PI * 2);
                 ctx.fill();
 
-                ctx.fillStyle = "white";
                 ctx.font = "bold 14px Arial";
                 ctx.textAlign = "center";
-                
-                ctx.fillText(p.name || "Guest", p.x, p.y - 25);
+                ctx.strokeStyle = "black";
+                ctx.lineWidth = 3;
+                ctx.strokeText(p.name || "Guest", p.x, p.y - 25); // Outline
+                ctx.fillStyle = "white";
+                ctx.fillText(p.name || "Guest", p.x, p.y - 25);  // Text
             }
 
-            // Draw client side player
             ctx.fillStyle = '#4CAF50';
             ctx.beginPath();
             ctx.arc(myPos.x, myPos.y, 15, 0, Math.PI * 2);
             ctx.fill();
 
-            // Client side nametag
-            ctx.fillStyle = "#4CAF50";
             ctx.font = "bold 14px Arial";
             ctx.textAlign = "center";
+            ctx.strokeStyle = "black";
+            ctx.lineWidth = 3;
+            ctx.strokeText(myName, myPos.x, myPos.y - 25);
+            ctx.fillStyle = "#4CAF50";
             ctx.fillText(myName, myPos.x, myPos.y - 25);
             
             ctx.restore();
