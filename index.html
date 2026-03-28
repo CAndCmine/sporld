@@ -22,8 +22,12 @@
 
         let allCursors = {};
 
-        window.addEventListener('mousemove', (e) => {
-            socket.emit('move', { x: e.clientX, y: e.clientY });
+        window.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+            if (key === 'w' || key === 'arrowup') socket.emit('move', 'up');
+            if (key === 's' || key === 'arrowdown') socket.emit('move', 'down');
+            if (key === 'a' || key === 'arrowleft') socket.emit('move', 'left');
+            if (key === 'd' || key === 'arrowright') socket.emit('move', 'right');
         });
 
         socket.on('update', (data) => {
