@@ -19,14 +19,15 @@
         window.addEventListener('resize', resize);
         resize();
 
-        window.addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; });
-        window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+        // Input
+        window.onkeydown = e => { keys[e.key.toLowerCase()] = true; };
+        window.onkeyup = e => { keys[e.key.toLowerCase()] = false; };
 
         setInterval(() => {
-            if (keys['w'] || keys['arrowup']) socket.emit('move', 'up');
-            if (keys['s'] || keys['arrowdown']) socket.emit('move', 'down');
-            if (keys['a'] || keys['arrowleft']) socket.emit('move', 'left');
-            if (keys['d'] || keys['arrowright']) socket.emit('move', 'right');
+            if (keys.w || keys.arrowup) socket.emit('move', 'up');
+            if (keys.s || keys.arrowdown) socket.emit('move', 'down');
+            if (keys.a || keys.arrowleft) socket.emit('move', 'left');
+            if (keys.d || keys.arrowright) socket.emit('move', 'right');
         }, 20);
 
         socket.on('update', data => { players = data; });
@@ -34,27 +35,38 @@
         function render() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            const me = players[socket.id];
-            if (me) {
-                ctx.save();
-                ctx.translate(canvas.width/2 - me.x, canvas.height/2 - me.y);
+            const me = players[socket.id] || { x: 1000, y: 1000 };
 
-                ctx.strokeStyle = "white";
-                ctx.lineWidth = 5;
-                ctx.strokeRect(0, 0, 2000, 2000);
+            ctx.save();
+            ctx.translate(canvas.width/2 - me.x, canvas.height/2 - me.y);
 
-                for (let id in players) {
-                    const p = players[id];
-                    ctx.fillStyle = (id === socket.id) ? '#4CAF50' : 'white';
-                    ctx.beginPath();
-                    ctx.arc(p.x, p.y, 15, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-                ctx.restore();
-            } else {
-                ctx.fillStyle = "white";
-                ctx.fillText("Waiting for server data...", 20, 20);
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = 5;
+            ctx.strokeRect(0, 0, 2000, 2000);
+
+            ctx.strokeStyle = "#333";
+            ctx.lineWidth = 1;
+            for(let i=0; i<=2000; i+=200){
+                ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,2000); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(2000,i); ctx.stroke();
             }
+
+            for (let id in players) {
+                const p = players[id];
+                ctx.fillStyle = (id === socket.id) ? '#4CAF50' : 'white';
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 15, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            if (!players[socket.id]) {
+                ctx.fillStyle = "rgba(76, 175, 80, 0.3)";
+                ctx.beginPath();
+                ctx.arc(me.x, me.y, 15, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.restore();
             requestAnimationFrame(render);
         }
         render();
