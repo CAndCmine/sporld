@@ -1,43 +1,34 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Sporld IO Multiplayer</title>
+    <title>Sporld.io</title>
     <style>
         body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: sans-serif; }
         canvas { display: block; }
-        #ui { position: absolute; top: 10px; left: 10px; color: white; pointer-events: none; }
     </style>
 </head>
 <body>
-    <div id="ui">Use <b>WASD</b> to move. Center: 1000, 1000</div>
     <canvas id="canvas"></canvas>
 
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
-        
+        const socket = io('https://sporld-server.onrender.com');
+
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        const socket = io('https://sporld-server.onrender.com');
-
-        let allCursors = {};
-        let myLerpPos = { x: 1000, y: 1000 }; 
+        let allPlayers = {};
+        let myLerpPos = { x: 1000, y: 1000 }; // Center spawn point
 
         const keys = { w: false, a: false, s: false, d: false, 
                        arrowup: false, arrowleft: false, arrowdown: false, arrowright: false };
 
-        window.addEventListener('keydown', (e) => {
-            const key = e.key.toLowerCase();
-            if (key in keys) keys[key] = true;
-        });
+        window.addEventListener('keydown', (e) => { if (e.key.toLowerCase() in keys) keys[e.key.toLowerCase()] = true; });
+        window.addEventListener('keyup', (e) => { if (e.key.toLowerCase() in keys) keys[e.key.toLowerCase()] = false; });
 
-        window.addEventListener('keyup', (e) => {
-            const key = e.key.toLowerCase();
-            if (key in keys) keys[key] = false;
-        });
-
+        // Input loop
         setInterval(() => {
             if (keys.w || keys.arrowup) socket.emit('move', 'up');
             if (keys.s || keys.arrowdown) socket.emit('move', 'down');
@@ -46,23 +37,25 @@
         }, 1000 / 60);
 
         socket.on('update', (data) => {
-            allCursors = data;
-            if (allCursors[socket.id]) {
-                myLerpPos.x += (allCursors[socket.id].x - myLerpPos.x) * 0.4;
-                myLerpPos.y += (allCursors[socket.id].y - myLerpPos.y) * 0.4;
+            allPlayers = data;
+            if (allPlayers[socket.id]) {
+                // Smoothly lerp the local camera toward the server position
+                myLerpPos.x += (allPlayers[socket.id].x - myLerpPos.x) * 0.3;
+                myLerpPos.y += (allPlayers[socket.id].y - myLerpPos.y) * 0.3;
             }
         });
 
         function render() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            const cameraX = canvas.width / 2 - myLerpPos.x;
-            const cameraY = canvas.height / 2 - myLerpPos.y;
+            // Move the world
+            const camX = canvas.width / 2 - myLerpPos.x;
+            const camY = canvas.height / 2 - myLerpPos.y;
 
             ctx.save();
-            ctx.translate(cameraX, cameraY);
+            ctx.translate(camX, camY);
 
-            // Draw Grid
+            //Grid lines
             ctx.strokeStyle = "#333";
             ctx.lineWidth = 1;
             for (let x = 0; x <= 2000; x += 100) {
@@ -72,21 +65,22 @@
                 ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(2000, y); ctx.stroke();
             }
 
-            // Draw Border
+            // World border
             ctx.strokeStyle = "white";
             ctx.lineWidth = 5;
-            ctx.strokeRect(0, 0, 2000, 2000); 
+            ctx.strokeRect(0, 0, 2000, 2000);
 
-            // Draw All Players
-            for (let id in allCursors) {
-                const c = allCursors[id];
+            //Player rendering
+            for (let id in allPlayers) {
+                const p = allPlayers[id];
                 ctx.fillStyle = (id === socket.id) ? '#4CAF50' : '#FFFFFF';
                 
-                const drawX = (id === socket.id) ? myLerpPos.x : c.x;
-                const drawY = (id === socket.id) ? myLerpPos.y : c.y;
-                
+                // Use smoothed position for self raw position for others
+                const x = (id === socket.id) ? myLerpPos.x : p.x;
+                const y = (id === socket.id) ? myLerpPos.y : p.y;
+
                 ctx.beginPath();
-                ctx.arc(drawX, drawY, c.size || 10, 0, Math.PI * 2);
+                ctx.arc(x, y, p.size || 15, 0, Math.PI * 2);
                 ctx.fill();
             }
 
@@ -95,11 +89,7 @@
         }
 
         render();
-
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        });
+        window.onresize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
     </script>
 </body>
 </html>
