@@ -17,7 +17,6 @@
         window.onkeydown = (e) => keys[e.key.toLowerCase()] = true;
         window.onkeyup = (e) => keys[e.key.toLowerCase()] = false;
 
-        // Input
         setInterval(() => {
             if (keys.w || keys.arrowup) socket.emit('move', 'up');
             if (keys.s || keys.arrowdown) socket.emit('move', 'down');
@@ -25,30 +24,37 @@
             if (keys.d || keys.arrowright) socket.emit('move', 'right');
         }, 16);
 
-        socket.on('update', (data) => players = data);
+        socket.on('update', (data) => {
+            players = data;
+        });
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Look for YOUR player in the data
             const me = players[socket.id];
 
             if (me) {
                 ctx.save();
-                // Center the world on ME
+                
                 ctx.translate(canvas.width/2 - me.x, canvas.height/2 - me.y);
 
-                // Border!
                 ctx.strokeStyle = "white";
+                ctx.lineWidth = 5;
                 ctx.strokeRect(0, 0, 2000, 2000);
 
-                // Draw everyone
                 for (let id in players) {
                     const p = players[id];
-                    ctx.fillStyle = id === socket.id ? '#4CAF50' : 'white';
+                    ctx.fillStyle = (id === socket.id) ? '#4CAF50' : 'white';
                     ctx.beginPath();
-                    ctx.arc(p.x, p.y, 15, 0, 7);
+                    ctx.arc(p.x, p.y, 15, 0, Math.PI * 2);
                     ctx.fill();
                 }
                 ctx.restore();
+            } else {
+                
+                ctx.fillStyle = "white";
+                ctx.fillText("Connecting to Render... (Wait 30s for cold start)", 20, 20);
             }
             requestAnimationFrame(draw);
         }
