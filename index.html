@@ -11,12 +11,13 @@
     <canvas id="canvas"></canvas>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script>
-        const myName = prompt("Enter any name:") || "Guest";
-socket.emit('join', myName);
         
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const socket = io('https://sporld-server.onrender.com');
+
+        const myName = prompt("Enter any name:") || "Guest";
+socket.emit('join', myName);
 
         let players = {};
         let myPos = { x: 1000, y: 1000 };
