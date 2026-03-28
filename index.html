@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Sporld.io | Lag-Free</title>
+    <title>Sporld IO</title>
     <style>
         body { margin: 0; background: #1a1a1a; overflow: hidden; font-family: sans-serif; }
         canvas { display: block; }
@@ -79,15 +79,11 @@
                 ctx.fill();
             }
 
-            // Client player rendering
             ctx.fillStyle = '#4CAF50';
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = '#4CAF50';
             ctx.beginPath();
             ctx.arc(myPos.x, myPos.y, 15, 0, Math.PI * 2);
             ctx.fill();
-            ctx.shadowBlur = 0; // Reset shadow
-
+            
             ctx.restore();
             requestAnimationFrame(render);
         }
