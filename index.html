@@ -22,7 +22,7 @@
 
         let allCursors = {};
         
-        // 1. TRACK KEY STATES
+        //TRACK KEY STATES
         const keys = {
             w: false, a: false, s: false, d: false,
             arrowup: false, arrowleft: false, arrowdown: false, arrowright: false
@@ -38,7 +38,7 @@
             if (key in keys) keys[key] = false;
         });
 
-        // 2. SEND MOVEMENT AT A CONSTANT RATE (Smooth)
+        //SEND SMOOTH MOVEMENT AT A CONSTANT RATE
         setInterval(() => {
             if (keys.w || keys.arrowup) socket.emit('move', 'up');
             if (keys.s || keys.arrowdown) socket.emit('move', 'down');
