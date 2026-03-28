@@ -1,13 +1,15 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Sporld.io Tracker</title>
+    <title>Sporld IO Multiplayer</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #1a1a1a; }
+        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: sans-serif; }
         canvas { display: block; }
+        #ui { position: absolute; top: 10px; left: 10px; color: white; pointer-events: none; }
     </style>
 </head>
 <body>
+    <div id="ui">Use <b>WASD</b> to move. Center: 1000, 1000</div>
     <canvas id="canvas"></canvas>
 
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
@@ -21,12 +23,10 @@
         const socket = io('https://sporld-server.onrender.com');
 
         let allCursors = {};
-        
-        //TRACK KEY STATES
-        const keys = {
-            w: false, a: false, s: false, d: false,
-            arrowup: false, arrowleft: false, arrowdown: false, arrowright: false
-        };
+        let myLerpPos = { x: 1000, y: 1000 }; 
+
+        const keys = { w: false, a: false, s: false, d: false, 
+                       arrowup: false, arrowleft: false, arrowdown: false, arrowright: false };
 
         window.addEventListener('keydown', (e) => {
             const key = e.key.toLowerCase();
@@ -38,7 +38,6 @@
             if (key in keys) keys[key] = false;
         });
 
-        //SEND SMOOTH MOVEMENT AT A CONSTANT RATE
         setInterval(() => {
             if (keys.w || keys.arrowup) socket.emit('move', 'up');
             if (keys.s || keys.arrowdown) socket.emit('move', 'down');
@@ -48,44 +47,53 @@
 
         socket.on('update', (data) => {
             allCursors = data;
+            if (allCursors[socket.id]) {
+                myLerpPos.x += (allCursors[socket.id].x - myLerpPos.x) * 0.4;
+                myLerpPos.y += (allCursors[socket.id].y - myLerpPos.y) * 0.4;
+            }
         });
 
         function render() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    
-    const myPlayer = allCursors[socket.id];
+            const cameraX = canvas.width / 2 - myLerpPos.x;
+            const cameraY = canvas.height / 2 - myLerpPos.y;
 
-    if (myPlayer) {
-        const cameraX = canvas.width / 2 - myPlayer.x;
-        const cameraY = canvas.height / 2 - myPlayer.y;
+            ctx.save();
+            ctx.translate(cameraX, cameraY);
 
-        
-        ctx.save();
-        ctx.translate(cameraX, cameraY);
+            // Draw Grid
+            ctx.strokeStyle = "#333";
+            ctx.lineWidth = 1;
+            for (let x = 0; x <= 2000; x += 100) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 2000); ctx.stroke();
+            }
+            for (let y = 0; y <= 2000; y += 100) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(2000, y); ctx.stroke();
+            }
 
-        
+            // Draw Border
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = 5;
+            ctx.strokeRect(0, 0, 2000, 2000); 
 
-        ctx.strokeStyle = "white";
-        ctx.lineWidth = 5;
-        ctx.strokeRect(0, 0, 2000, 2000); 
+            // Draw All Players
+            for (let id in allCursors) {
+                const c = allCursors[id];
+                ctx.fillStyle = (id === socket.id) ? '#4CAF50' : '#FFFFFF';
+                
+                const drawX = (id === socket.id) ? myLerpPos.x : c.x;
+                const drawY = (id === socket.id) ? myLerpPos.y : c.y;
+                
+                ctx.beginPath();
+                ctx.arc(drawX, drawY, c.size || 10, 0, Math.PI * 2);
+                ctx.fill();
+            }
 
-        
-        for (let id in allCursors) {
-            const c = allCursors[id];
-            ctx.fillStyle = (id === socket.id) ? '#4CAF50' : '#FFFFFF';
-            
-            ctx.beginPath();
-            ctx.arc(c.x, c.y, c.size || 10, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.restore();
+            requestAnimationFrame(render);
         }
 
-        
-        ctx.restore();
-    }
-
-    requestAnimationFrame(render);
-}
         render();
 
         window.addEventListener('resize', () => {
