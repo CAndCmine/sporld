@@ -40,16 +40,15 @@
         window.onmousemove = e => { mousePos.x = e.clientX; mousePos.y = e.clientY; };
 
         setInterval(() => {
-            if (keys.w || keys.arrowup)    { myPos.y -= SPEED; }
-            if (keys.s || keys.arrowdown)  { myPos.y += SPEED; }
-            if (keys.a || keys.arrowleft)  { myPos.x -= SPEED; }
-            if (keys.d || keys.arrowright) { myPos.x += SPEED; }
+            if (keys.w || keys.arrowup)    myPos.y -= SPEED;
+            if (keys.s || keys.arrowdown)  myPos.y += SPEED;
+            if (keys.a || keys.arrowleft)  myPos.x -= SPEED;
+            if (keys.d || keys.arrowright) myPos.x += SPEED;
 
             myPos.x = Math.max(0, Math.min(MAP_SIZE, myPos.x));
             myPos.y = Math.max(0, Math.min(MAP_SIZE, myPos.y));
 
             const angle = Math.atan2(mousePos.y - window.innerHeight/2, mousePos.x - window.innerWidth/2);
-            
             socket.emit('move', { x: myPos.x, y: myPos.y, angle: angle });
         }, 16);
 
@@ -57,9 +56,10 @@
 
         function render() {
             const dpr = window.devicePixelRatio || 1;
+            
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            ctx.save();
             ctx.scale(dpr, dpr);
             ctx.translate(window.innerWidth/2 - myPos.x, window.innerHeight/2 - myPos.y);
 
@@ -79,8 +79,14 @@
                 const isMe = (id === socket.id);
                 
                 ctx.save();
-                ctx.translate(p.x, p.y);
-                ctx.rotate(p.angle || 0);
+                
+                const drawX = isMe ? myPos.x : p.x;
+                const drawY = isMe ? myPos.y : p.y;
+                
+                ctx.translate(drawX, drawY);
+                
+                const drawAngle = isMe ? Math.atan2(mousePos.y - window.innerHeight/2, mousePos.x - window.innerWidth/2) : (p.angle || 0);
+                ctx.rotate(drawAngle);
 
                 ctx.fillStyle = isMe ? '#4CAF50' : 'white';
                 ctx.beginPath();
@@ -94,10 +100,9 @@
                 ctx.font = "bold 14px Arial";
                 ctx.textAlign = "center";
                 ctx.fillStyle = isMe ? '#4CAF50' : 'white';
-                ctx.fillText(p.name || "Guest", p.x, p.y - 30);
+                ctx.fillText(p.name || "Guest", drawX, drawY - 30);
             }
 
-            ctx.restore();
             requestAnimationFrame(render);
         }
         render();
