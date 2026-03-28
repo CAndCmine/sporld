@@ -17,7 +17,7 @@
         const socket = io('https://sporld-server.onrender.com');
 
         // Name prompt
-        const myName = prompt("Enter any name:") || "Guest";
+        const myName = prompt("Enter a nickname:") || "Guest";
         socket.emit('join', myName);
 
         let players = {};
