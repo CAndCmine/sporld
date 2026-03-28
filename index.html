@@ -21,14 +21,30 @@
         const socket = io('https://sporld-server.onrender.com');
 
         let allCursors = {};
+        
+        // 1. TRACK KEY STATES
+        const keys = {
+            w: false, a: false, s: false, d: false,
+            arrowup: false, arrowleft: false, arrowdown: false, arrowright: false
+        };
 
         window.addEventListener('keydown', (e) => {
             const key = e.key.toLowerCase();
-            if (key === 'w' || key === 'arrowup') socket.emit('move', 'up');
-            if (key === 's' || key === 'arrowdown') socket.emit('move', 'down');
-            if (key === 'a' || key === 'arrowleft') socket.emit('move', 'left');
-            if (key === 'd' || key === 'arrowright') socket.emit('move', 'right');
+            if (key in keys) keys[key] = true;
         });
+
+        window.addEventListener('keyup', (e) => {
+            const key = e.key.toLowerCase();
+            if (key in keys) keys[key] = false;
+        });
+
+        // 2. SEND MOVEMENT AT A CONSTANT RATE (Smooth)
+        setInterval(() => {
+            if (keys.w || keys.arrowup) socket.emit('move', 'up');
+            if (keys.s || keys.arrowdown) socket.emit('move', 'down');
+            if (keys.a || keys.arrowleft) socket.emit('move', 'left');
+            if (keys.d || keys.arrowright) socket.emit('move', 'right');
+        }, 1000 / 60);
 
         socket.on('update', (data) => {
             allCursors = data;
@@ -37,18 +53,26 @@
         function render() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+            // OPTIONAL: Draw the map border so you know where the edge is
+            ctx.strokeStyle = "white";
+            ctx.strokeRect(0, 0, 2000, 2000); 
+
             for (let id in allCursors) {
                 const c = allCursors[id];
-                
                 ctx.fillStyle = (id === socket.id) ? '#4CAF50' : '#FFFFFF';
                 
                 ctx.beginPath();
-                ctx.arc(c.x, c.y, 8, 0, Math.PI * 2);
+                ctx.arc(c.x, c.y, c.size || 10, 0, Math.PI * 2);
                 ctx.fill();
             }
             requestAnimationFrame(render);
         }
         render();
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
     </script>
 </body>
 </html>
