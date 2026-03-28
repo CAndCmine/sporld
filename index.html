@@ -13,7 +13,6 @@
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
-        
         const socket = io('https://sporld-server.onrender.com');
 
         const myName = prompt("Enter a nickname:") || "Guest";
@@ -21,25 +20,24 @@
 
         let players = {};
         let myPos = { x: 1000, y: 1000 };
+        let mousePos = { x: 0, y: 0 };
         const keys = {};
         const SPEED = 7;
         const MAP_SIZE = 2000;
 
         const resize = () => {
             const dpr = window.devicePixelRatio || 1;
-            
             canvas.style.width = window.innerWidth + 'px';
             canvas.style.height = window.innerHeight + 'px';
-
             canvas.width = window.innerWidth * dpr;
             canvas.height = window.innerHeight * dpr;
-            
         };
         window.addEventListener('resize', resize);
         resize();
-        
+
         window.onkeydown = e => { keys[e.key.toLowerCase()] = true; };
         window.onkeyup = e => { keys[e.key.toLowerCase()] = false; };
+        window.onmousemove = e => { mousePos.x = e.clientX; mousePos.y = e.clientY; };
 
         setInterval(() => {
             let moved = false;
@@ -59,13 +57,10 @@
 
         function render() {
             const dpr = window.devicePixelRatio || 1;
-            
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             ctx.save();
-            
             ctx.scale(dpr, dpr);
-
             ctx.translate(window.innerWidth/2 - myPos.x, window.innerHeight/2 - myPos.y);
 
             ctx.strokeStyle = "#333";
@@ -74,6 +69,7 @@
                 ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,MAP_SIZE); ctx.stroke();
                 ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(MAP_SIZE,i); ctx.stroke();
             }
+            
             ctx.strokeStyle = "white";
             ctx.lineWidth = 5;
             ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
@@ -81,39 +77,39 @@
             for (let id in players) {
                 if (id === socket.id) continue; 
                 const p = players[id];
-                
                 ctx.fillStyle = "white";
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, 15, 0, Math.PI * 2);
                 ctx.fill();
-
+                
                 ctx.font = "bold 14px Arial";
                 ctx.textAlign = "center";
-                ctx.strokeStyle = "black";
-                ctx.lineWidth = 3;
-                ctx.strokeText(p.name || "Guest", p.x, p.y - 25);
                 ctx.fillStyle = "white";
                 ctx.fillText(p.name || "Guest", p.x, p.y - 25);
             }
 
+            ctx.save();
+            ctx.translate(myPos.x, myPos.y);
+            const angle = Math.atan2(mousePos.y - window.innerHeight/2, mousePos.x - window.innerWidth/2);
+            ctx.rotate(angle);
+
             ctx.fillStyle = '#4CAF50';
             ctx.beginPath();
-            ctx.arc(myPos.x, myPos.y, 15, 0, Math.PI * 2);
+            ctx.moveTo(20, 0);
+            ctx.lineTo(-15, 12);
+            ctx.lineTo(-15, -12);
+            ctx.closePath();
             ctx.fill();
+            ctx.restore();
 
             ctx.font = "bold 14px Arial";
             ctx.textAlign = "center";
-            ctx.strokeStyle = "black";
-            ctx.lineWidth = 3;
-            ctx.strokeText(myName, myPos.x, myPos.y - 25);
             ctx.fillStyle = "#4CAF50";
-            ctx.fillText(myName, myPos.x, myPos.y - 25);
+            ctx.fillText(myName, myPos.x, myPos.y - 30);
             
             ctx.restore();
-            
             requestAnimationFrame(render);
         }
-
         render();
     </script>
 </body>
