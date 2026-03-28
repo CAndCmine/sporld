@@ -61,11 +61,18 @@
         socket.on('update', data => { players = data; });
 
         function render() {
+            const dpr = window.devicePixelRatio || 1;
+    
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
+    
             ctx.save();
-            ctx.translate(canvas.width/2 - myPos.x, canvas.height/2 - myPos.y);
+    
+            ctx.scale(dpr, dpr);
 
+            ctx.translate(window.innerWidth/2 - myPos.x, window.innerHeight/2 - myPos.y);
+
+            ctx.restore();
+    requestAnimationFrame(render);
             // Grid and border
             ctx.strokeStyle = "#333";
             for(let i=0; i<=MAP_SIZE; i+=100){
