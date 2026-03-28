@@ -1,9 +1,6 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Sporld.io</title>
-    <style>body { margin: 0; background: #1a1a1a; overflow: hidden; }</style>
-</head>
+<head><style>body{margin:0;background:#1a1a1a;overflow:hidden;}</style></head>
 <body>
     <canvas id="canvas"></canvas>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
@@ -13,40 +10,44 @@
         const socket = io('https://sporld-server.onrender.com');
 
         let players = {};
+        let myPos = { x: 1000, y: 1000 }; // Local "Source of Truth"
         const keys = {};
+        const SPEED = 7;
 
-        const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
-        window.addEventListener('resize', resize);
-        resize();
+        window.onresize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+        window.onresize();
 
-        // Input
         window.onkeydown = e => { keys[e.key.toLowerCase()] = true; };
         window.onkeyup = e => { keys[e.key.toLowerCase()] = false; };
 
+        // movement
         setInterval(() => {
-            if (keys.w || keys.arrowup) socket.emit('move', 'up');
-            if (keys.s || keys.arrowdown) socket.emit('move', 'down');
-            if (keys.a || keys.arrowleft) socket.emit('move', 'left');
-            if (keys.d || keys.arrowright) socket.emit('move', 'right');
-        }, 20);
+            let moved = false;
+            if (keys.w || keys.arrowup) { myPos.y -= SPEED; moved = true; }
+            if (keys.s || keys.arrowdown) { myPos.y += SPEED; moved = true; }
+            if (keys.a || keys.arrowleft) { myPos.x -= SPEED; moved = true; }
+            if (keys.d || keys.arrowright) { myPos.x += SPEED; moved = true; }
+
+            if (moved) {
+                socket.emit('move', { x: myPos.x, y: myPos.y });
+            }
+        }, 16);
 
         socket.on('update', data => { players = data; });
 
         function render() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            const me = players[socket.id] || { x: 1000, y: 1000 };
-
             ctx.save();
-            ctx.translate(canvas.width/2 - me.x, canvas.height/2 - me.y);
+            ctx.translate(canvas.width/2 - myPos.x, canvas.height/2 - myPos.y);
 
             ctx.strokeStyle = "white";
             ctx.lineWidth = 5;
             ctx.strokeRect(0, 0, 2000, 2000);
 
+            // Grid
             ctx.strokeStyle = "#333";
-            ctx.lineWidth = 1;
-            for(let i=0; i<=2000; i+=200){
+            for(let i=0; i<=2000; i+=100){
                 ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,2000); ctx.stroke();
                 ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(2000,i); ctx.stroke();
             }
@@ -55,17 +56,9 @@
                 const p = players[id];
                 ctx.fillStyle = (id === socket.id) ? '#4CAF50' : 'white';
                 ctx.beginPath();
-                ctx.arc(p.x, p.y, 15, 0, Math.PI * 2);
+                ctx.arc(p.x, p.y, 15, 0, 7);
                 ctx.fill();
             }
-
-            if (!players[socket.id]) {
-                ctx.fillStyle = "rgba(76, 175, 80, 0.3)";
-                ctx.beginPath();
-                ctx.arc(me.x, me.y, 15, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
             ctx.restore();
             requestAnimationFrame(render);
         }
