@@ -82,10 +82,10 @@ socket.emit('join', myName);
                 ctx.arc(p.x, p.y, 15, 0, Math.PI * 2);
                 ctx.fill();
 
-                // nametag rendering
                 ctx.fillStyle = "white";
                 ctx.font = "bold 14px Arial";
                 ctx.textAlign = "center";
+                
                 ctx.fillText(p.name || "Guest", p.x, p.y - 25);
             }
 
