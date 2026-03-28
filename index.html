@@ -11,6 +11,9 @@
     <canvas id="canvas"></canvas>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script>
+        const myName = prompt("Enter any name:") || "Guest";
+socket.emit('join', myName);
+        
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const socket = io('https://sporld-server.onrender.com');
@@ -71,18 +74,31 @@
 
             for (let id in players) {
                 if (id === socket.id) continue; 
-
                 const p = players[id];
+                
                 ctx.fillStyle = "white";
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, 15, 0, Math.PI * 2);
                 ctx.fill();
+
+                // nametag rendering
+                ctx.fillStyle = "white";
+                ctx.font = "bold 14px Arial";
+                ctx.textAlign = "center";
+                ctx.fillText(p.name || "Guest", p.x, p.y - 25);
             }
 
+            // Draw client side player
             ctx.fillStyle = '#4CAF50';
             ctx.beginPath();
             ctx.arc(myPos.x, myPos.y, 15, 0, Math.PI * 2);
             ctx.fill();
+
+            // Client side nametag
+            ctx.fillStyle = "#4CAF50";
+            ctx.font = "bold 14px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText(myName, myPos.x, myPos.y - 25);
             
             ctx.restore();
             requestAnimationFrame(render);
