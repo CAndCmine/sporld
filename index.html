@@ -16,7 +16,6 @@
         
         const socket = io('https://sporld-server.onrender.com');
 
-        // Name prompt
         const myName = prompt("Enter a nickname:") || "Guest";
         socket.emit('join', myName);
 
@@ -28,22 +27,20 @@
 
         const resize = () => {
             const dpr = window.devicePixelRatio || 1;
-    
+            
             canvas.style.width = window.innerWidth + 'px';
             canvas.style.height = window.innerHeight + 'px';
 
             canvas.width = window.innerWidth * dpr;
             canvas.height = window.innerHeight * dpr;
-
-            ctx.scale(dpr, dpr);
+            
         };
         window.addEventListener('resize', resize);
         resize();
-
+        
         window.onkeydown = e => { keys[e.key.toLowerCase()] = true; };
         window.onkeyup = e => { keys[e.key.toLowerCase()] = false; };
 
-        // Movement!
         setInterval(() => {
             let moved = false;
             if (keys.w || keys.arrowup)    { myPos.y -= SPEED; moved = true; }
@@ -62,19 +59,17 @@
 
         function render() {
             const dpr = window.devicePixelRatio || 1;
-    
+            
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
+            
             ctx.save();
-    
+            
             ctx.scale(dpr, dpr);
 
             ctx.translate(window.innerWidth/2 - myPos.x, window.innerHeight/2 - myPos.y);
 
-            ctx.restore();
-    requestAnimationFrame(render);
-            // Grid and border
             ctx.strokeStyle = "#333";
+            ctx.lineWidth = 1;
             for(let i=0; i<=MAP_SIZE; i+=100){
                 ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,MAP_SIZE); ctx.stroke();
                 ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(MAP_SIZE,i); ctx.stroke();
@@ -96,9 +91,9 @@
                 ctx.textAlign = "center";
                 ctx.strokeStyle = "black";
                 ctx.lineWidth = 3;
-                ctx.strokeText(p.name || "Guest", p.x, p.y - 25); // Outline
+                ctx.strokeText(p.name || "Guest", p.x, p.y - 25);
                 ctx.fillStyle = "white";
-                ctx.fillText(p.name || "Guest", p.x, p.y - 25);  // Text
+                ctx.fillText(p.name || "Guest", p.x, p.y - 25);
             }
 
             ctx.fillStyle = '#4CAF50';
@@ -115,8 +110,10 @@
             ctx.fillText(myName, myPos.x, myPos.y - 25);
             
             ctx.restore();
+            
             requestAnimationFrame(render);
         }
+
         render();
     </script>
 </body>
