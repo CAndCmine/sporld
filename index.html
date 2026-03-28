@@ -1,36 +1,50 @@
 <!DOCTYPE html>
 <html>
-<body style="margin:0; overflow:hidden; background: #222;">
-    <canvas id="g"></canvas>
+<head>
+    <title>Sporld.io Tracker</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #1a1a1a; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script>
-        const canvas = document.getElementById('g');
+        const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
+        
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        const socket = io('https://'); 
+        const socket = io('https://sporld-server.onrender.com');
 
-        let players = {};
+        let allCursors = {};
 
-        window.addEventListener('mousemove', e => {
+        window.addEventListener('mousemove', (e) => {
             socket.emit('move', { x: e.clientX, y: e.clientY });
         });
 
-        socket.on('update', data => { players = data; });
+        socket.on('update', (data) => {
+            allCursors = data;
+        });
 
-        function draw() {
+        function render() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            for (let id in players) {
-                const p = players[id];
-                ctx.fillStyle = (id === socket.id) ? '#00ff00' : '#ff0000';
+
+            for (let id in allCursors) {
+                const c = allCursors[id];
+                
+                ctx.fillStyle = (id === socket.id) ? '#4CAF50' : '#FFFFFF';
+                
                 ctx.beginPath();
-                ctx.arc(p.x, p.y, 15, 0, 7);
+                ctx.arc(c.x, c.y, 8, 0, Math.PI * 2);
                 ctx.fill();
             }
-            requestAnimationFrame(draw);
+            requestAnimationFrame(render);
         }
-        draw();
+        render();
     </script>
 </body>
 </html>
