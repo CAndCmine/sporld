@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html>
-<head><style>body{margin:0;background:#1a1a1a;overflow:hidden;}</style></head>
+<head>
+    <title>Sporld.io | Lag-Free</title>
+    <style>
+        body { margin: 0; background: #1a1a1a; overflow: hidden; font-family: sans-serif; }
+        canvas { display: block; }
+    </style>
+</head>
 <body>
     <canvas id="canvas"></canvas>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
@@ -10,55 +16,79 @@
         const socket = io('https://sporld-server.onrender.com');
 
         let players = {};
-        let myPos = { x: 1000, y: 1000 }; // Local "Source of Truth"
+        let myPos = { x: 1000, y: 1000 };
         const keys = {};
         const SPEED = 7;
+        const MAP_SIZE = 2000;
 
-        window.onresize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
-        window.onresize();
+        const resize = () => { 
+            canvas.width = window.innerWidth; 
+            canvas.height = window.innerHeight; 
+        };
+        window.addEventListener('resize', resize);
+        resize();
 
         window.onkeydown = e => { keys[e.key.toLowerCase()] = true; };
         window.onkeyup = e => { keys[e.key.toLowerCase()] = false; };
 
-        // movement
         setInterval(() => {
             let moved = false;
-            if (keys.w || keys.arrowup) { myPos.y -= SPEED; moved = true; }
-            if (keys.s || keys.arrowdown) { myPos.y += SPEED; moved = true; }
-            if (keys.a || keys.arrowleft) { myPos.x -= SPEED; moved = true; }
+            if (keys.w || keys.arrowup)    { myPos.y -= SPEED; moved = true; }
+            if (keys.s || keys.arrowdown)  { myPos.y += SPEED; moved = true; }
+            if (keys.a || keys.arrowleft)  { myPos.x -= SPEED; moved = true; }
             if (keys.d || keys.arrowright) { myPos.x += SPEED; moved = true; }
 
             if (moved) {
+                myPos.x = Math.max(0, Math.min(MAP_SIZE, myPos.x));
+                myPos.y = Math.max(0, Math.min(MAP_SIZE, myPos.y));
+
                 socket.emit('move', { x: myPos.x, y: myPos.y });
             }
         }, 16);
 
-        socket.on('update', data => { players = data; });
+        socket.on('update', data => { 
+            players = data; 
+        });
 
         function render() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
+            // World to camera pos
             ctx.save();
             ctx.translate(canvas.width/2 - myPos.x, canvas.height/2 - myPos.y);
 
-            ctx.strokeStyle = "white";
-            ctx.lineWidth = 5;
-            ctx.strokeRect(0, 0, 2000, 2000);
-
             // Grid
             ctx.strokeStyle = "#333";
-            for(let i=0; i<=2000; i+=100){
-                ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,2000); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(2000,i); ctx.stroke();
+            ctx.lineWidth = 1;
+            for(let i=0; i<=MAP_SIZE; i+=100){
+                ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,MAP_SIZE); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(MAP_SIZE,i); ctx.stroke();
             }
 
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = 5;
+            ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
+
             for (let id in players) {
+                // Skip drawing the server's delayed version of ourselves
+                if (id === socket.id) continue; 
+
                 const p = players[id];
-                ctx.fillStyle = (id === socket.id) ? '#4CAF50' : 'white';
+                ctx.fillStyle = "white";
                 ctx.beginPath();
-                ctx.arc(p.x, p.y, 15, 0, 7);
+                ctx.arc(p.x, p.y, 15, 0, Math.PI * 2);
                 ctx.fill();
             }
+
+            // 4. Draw YOU (The Green Dot) using local coordinates
+            ctx.fillStyle = '#4CAF50';
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#4CAF50';
+            ctx.beginPath();
+            ctx.arc(myPos.x, myPos.y, 15, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0; // Reset shadow
+
             ctx.restore();
             requestAnimationFrame(render);
         }
