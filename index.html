@@ -70,7 +70,6 @@
             ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
 
             for (let id in players) {
-                // Skip drawing the server's delayed version of ourselves
                 if (id === socket.id) continue; 
 
                 const p = players[id];
@@ -80,7 +79,7 @@
                 ctx.fill();
             }
 
-            // 4. Draw YOU (The Green Dot) using local coordinates
+            // Client player rendering
             ctx.fillStyle = '#4CAF50';
             ctx.shadowBlur = 10;
             ctx.shadowColor = '#4CAF50';
