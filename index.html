@@ -40,17 +40,17 @@
         window.onmousemove = e => { mousePos.x = e.clientX; mousePos.y = e.clientY; };
 
         setInterval(() => {
-            let moved = false;
-            if (keys.w || keys.arrowup)    { myPos.y -= SPEED; moved = true; }
-            if (keys.s || keys.arrowdown)  { myPos.y += SPEED; moved = true; }
-            if (keys.a || keys.arrowleft)  { myPos.x -= SPEED; moved = true; }
-            if (keys.d || keys.arrowright) { myPos.x += SPEED; moved = true; }
+            if (keys.w || keys.arrowup)    { myPos.y -= SPEED; }
+            if (keys.s || keys.arrowdown)  { myPos.y += SPEED; }
+            if (keys.a || keys.arrowleft)  { myPos.x -= SPEED; }
+            if (keys.d || keys.arrowright) { myPos.x += SPEED; }
 
-            if (moved) {
-                myPos.x = Math.max(0, Math.min(MAP_SIZE, myPos.x));
-                myPos.y = Math.max(0, Math.min(MAP_SIZE, myPos.y));
-                socket.emit('move', { x: myPos.x, y: myPos.y });
-            }
+            myPos.x = Math.max(0, Math.min(MAP_SIZE, myPos.x));
+            myPos.y = Math.max(0, Math.min(MAP_SIZE, myPos.y));
+
+            const angle = Math.atan2(mousePos.y - window.innerHeight/2, mousePos.x - window.innerWidth/2);
+            
+            socket.emit('move', { x: myPos.x, y: myPos.y, angle: angle });
         }, 16);
 
         socket.on('update', data => { players = data; });
@@ -75,38 +75,28 @@
             ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
 
             for (let id in players) {
-                if (id === socket.id) continue; 
                 const p = players[id];
-                ctx.fillStyle = "white";
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, 15, 0, Math.PI * 2);
-                ctx.fill();
+                const isMe = (id === socket.id);
                 
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.angle || 0);
+
+                ctx.fillStyle = isMe ? '#4CAF50' : 'white';
+                ctx.beginPath();
+                ctx.moveTo(20, 0);
+                ctx.lineTo(-15, 12);
+                ctx.lineTo(-15, -12);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+
                 ctx.font = "bold 14px Arial";
                 ctx.textAlign = "center";
-                ctx.fillStyle = "white";
-                ctx.fillText(p.name || "Guest", p.x, p.y - 25);
+                ctx.fillStyle = isMe ? '#4CAF50' : 'white';
+                ctx.fillText(p.name || "Guest", p.x, p.y - 30);
             }
 
-            ctx.save();
-            ctx.translate(myPos.x, myPos.y);
-            const angle = Math.atan2(mousePos.y - window.innerHeight/2, mousePos.x - window.innerWidth/2);
-            ctx.rotate(angle);
-
-            ctx.fillStyle = '#4CAF50';
-            ctx.beginPath();
-            ctx.moveTo(20, 0);
-            ctx.lineTo(-15, 12);
-            ctx.lineTo(-15, -12);
-            ctx.closePath();
-            ctx.fill();
-            ctx.restore();
-
-            ctx.font = "bold 14px Arial";
-            ctx.textAlign = "center";
-            ctx.fillStyle = "#4CAF50";
-            ctx.fillText(myName, myPos.x, myPos.y - 30);
-            
             ctx.restore();
             requestAnimationFrame(render);
         }
