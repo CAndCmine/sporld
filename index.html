@@ -26,9 +26,16 @@
         const SPEED = 7;
         const MAP_SIZE = 2000;
 
-        const resize = () => { 
-            canvas.width = window.innerWidth; 
-            canvas.height = window.innerHeight; 
+        const resize = () => {
+            const dpr = window.devicePixelRatio || 1;
+    
+            canvas.style.width = window.innerWidth + 'px';
+            canvas.style.height = window.innerHeight + 'px';
+
+            canvas.width = window.innerWidth * dpr;
+            canvas.height = window.innerHeight * dpr;
+
+            ctx.scale(dpr, dpr);
         };
         window.addEventListener('resize', resize);
         resize();
