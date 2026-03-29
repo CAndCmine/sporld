@@ -20,13 +20,13 @@ const myName = prompt("Nickname:") || "Guest";
 socket.emit('join', myName);
 
 let players = {};
+let bullets = [];
 let myPos = { x: 1000, y: 1000, angle: 0 };
 let mousePos = { x: 0, y: 0 };
 const keys = {};
 
 const SPEED = 5;
 const MAP_SIZE = 2000;
-
 const PLAYER_LENGTH = 25;
 const PLAYER_WIDTH = 20;
 
@@ -45,6 +45,10 @@ window.onkeyup = e => keys[e.key.toLowerCase()] = false;
 window.onmousemove = e => {
     mousePos.x = e.clientX;
     mousePos.y = e.clientY;
+};
+
+window.onmousedown = () => {
+    socket.emit('shoot');
 };
 
 setInterval(() => {
@@ -69,7 +73,8 @@ setInterval(() => {
 }, 16);
 
 socket.on('update', data => {
-    players = data;
+    players = data.players;
+    bullets = data.bullets;
 });
 
 function renderPlayer(x, y, angle, color) {
@@ -77,16 +82,13 @@ function renderPlayer(x, y, angle, color) {
     ctx.translate(x, y);
     ctx.rotate(angle);
 
-
     ctx.beginPath();
     ctx.moveTo(PLAYER_LENGTH, 0);
     ctx.lineTo(-PLAYER_WIDTH, PLAYER_WIDTH);
     ctx.lineTo(-PLAYER_WIDTH, -PLAYER_WIDTH);
     ctx.closePath();
 
-
     ctx.lineJoin = "round";
-
     ctx.lineWidth = 12; 
     ctx.strokeStyle = "white";
     ctx.stroke();
@@ -120,17 +122,23 @@ function render() {
     ctx.lineWidth = 4;
     ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
 
+    bullets.forEach(b => {
+        ctx.fillStyle = "yellow";
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, 5, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
     for (let id in players) {
         const p = players[id];
         if (!p) continue;
 
         const isMe = (id === socket.id);
-
         const x = isMe ? myPos.x : p.x;
         const y = isMe ? myPos.y : p.y;
         const angle = isMe ? myPos.angle : (typeof p.angle === "number" ? p.angle : 0);
 
-        renderPlayer(x, y, angle, isMe ? 'rgb(30, 30, 30)' : 'rgb(30, 30, 30)');
+        renderPlayer(x, y, angle, 'rgb(30, 30, 30)');
 
         ctx.fillStyle = "white";
         ctx.font = "13px Arial";
