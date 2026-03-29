@@ -15,7 +15,7 @@
         const ctx = canvas.getContext('2d');
         const socket = io('https://sporld-server.onrender.com'); 
 
-        const myName = prompt("Type your nickname:") || "Guest";
+        const myName = prompt("Nickname:") || "Guest";
         socket.emit('join', myName);
 
         let players = {};
@@ -27,12 +27,10 @@
         let zoom = 1;
 
         function resize() {
-            const dpr = window.devicePixelRatio || 1;
-            canvas.width = window.innerWidth * dpr;
-            canvas.height = window.innerHeight * dpr;
-            
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
             const baseDimension = 1000;
-            zoom = (Math.min(window.innerWidth, window.innerHeight) / baseDimension) * dpr;
+            zoom = Math.min(canvas.width, canvas.height) / baseDimension;
         }
         window.addEventListener('resize', resize);
         resize();
@@ -40,8 +38,8 @@
         window.onkeydown = e => { keys[e.key.toLowerCase()] = true; };
         window.onkeyup = e => { keys[e.key.toLowerCase()] = false; };
         window.onmousemove = e => { 
-            mousePos.x = e.clientX * (window.devicePixelRatio || 1); 
-            mousePos.y = e.clientY * (window.devicePixelRatio || 1); 
+            mousePos.x = e.clientX; 
+            mousePos.y = e.clientY; 
         };
 
         setInterval(() => {
@@ -52,6 +50,7 @@
 
             myPos.x = Math.max(0, Math.min(MAP_SIZE, myPos.x));
             myPos.y = Math.max(0, Math.min(MAP_SIZE, myPos.y));
+            
             myPos.angle = Math.atan2(mousePos.y - canvas.height/2, mousePos.x - canvas.width/2);
             
             socket.emit('move', { x: myPos.x, y: myPos.y, angle: myPos.angle });
@@ -84,13 +83,14 @@
                 if (!p) continue;
 
                 const isMe = (id === socket.id);
-                const x = isMe ? myPos.x : p.x;
-                const y = isMe ? myPos.y : p.y;
-                const angle = isMe ? myPos.angle : p.angle;
+                const drawX = isMe ? myPos.x : p.x;
+                const drawY = isMe ? myPos.y : p.y;
+                const drawAngle = isMe ? myPos.angle : (p.angle || 0);
 
                 ctx.save();
-                ctx.translate(x, y);
-                ctx.rotate(angle);
+                ctx.translate(drawX, drawY);
+                ctx.rotate(drawAngle);
+                
                 ctx.fillStyle = isMe ? '#4CAF50' : '#e74c3c';
                 ctx.beginPath();
                 ctx.moveTo(30, 0);
@@ -101,9 +101,9 @@
                 ctx.restore();
 
                 ctx.fillStyle = "white";
-                ctx.font = "bold 24px Arial";
+                ctx.font = "bold 20px Arial";
                 ctx.textAlign = "center";
-                ctx.fillText(p.name || "Guest", x, y - 40);
+                ctx.fillText(p.name || "Guest", drawX, drawY - 40);
             }
 
             requestAnimationFrame(render);
