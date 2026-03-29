@@ -87,9 +87,6 @@
                 const p = players[id];
                 const isMe = (id === socket.id);
                 
-                // DATA SOURCE: 
-                // Use local myPos for self (no lag), 
-                // use p.angle from server for everyone else.
                 const x = isMe ? myPos.x : p.x;
                 const y = isMe ? myPos.y : p.y;
                 const angle = isMe ? myPos.angle : (p.angle || 0);
