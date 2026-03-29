@@ -109,14 +109,15 @@ function drawPlayer(x, y, angle, color, name) {
     ctx.translate(x, y);
     ctx.rotate(angle);
     ctx.fillStyle = color;
+    ctx.lineJoin = "round";
     ctx.beginPath();
-    ctx.moveTo(20, 0); 
-    ctx.lineTo(-15, 15); 
-    ctx.lineTo(-15, -15);
+    ctx.moveTo(22.5, 0); 
+    ctx.lineTo(-22.5, 20); 
+    ctx.lineTo(-22.5, -20);
     ctx.closePath();
     ctx.fill();
     ctx.strokeStyle = "white";
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 5;
     ctx.stroke();
     ctx.restore();
 
@@ -137,14 +138,14 @@ function render() {
     ctx.save();
     ctx.translate(window.innerWidth / 2 - myPos.x, window.innerHeight / 2 - myPos.y);
 
-    ctx.strokeStyle = "rgb(0, 0, 0, 0.2)";
-    ctx.lineWidth = ;
+    ctx.strokeStyle = "rgb(0, 0, 0, 0.1)";
+    ctx.lineWidth = 6;
     for (let i = 0; i <= MAP_SIZE; i += 100) {
         ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, MAP_SIZE); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(MAP_SIZE, i); ctx.stroke();
     }
   
-    ctx.strokeStyle = "#33";
+    ctx.strokeStyle = "#333";
     ctx.lineWidth = 1;
     for (let i = 0; i <= MAP_SIZE; i += 100) {
         ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, MAP_SIZE); ctx.stroke();
