@@ -50,7 +50,7 @@ button:hover { background: #0072d1; }
             <input type="checkbox" id="joyCheck" style="width: auto; margin: 0; vertical-align: middle;">
             <label for="joyCheck" style="margin-left: 8px;">Enable Mobile Joystick</label>
         </div>
-        <button id="playBtn">PLAY</button>
+        <button id="playBtn">Join game</button>
         <div id="status">Connecting...</div>
     </div>
 </div>
@@ -135,7 +135,7 @@ setInterval(() => {
 
 function updateLeaderboard() {
     let sorted = Object.values(players).sort((a, b) => b.score - a.score).slice(0, 5);
-    let html = '<div style="font-size:10px; color:#888; margin-bottom:5px;">LEADERBOARD</div>';
+    let html = '<div style="font-size:10px; color:#888; margin-bottom:5px;">Leaderboard</div>';
     sorted.forEach(p => {
         html += `<div class="lb-item"><span class="lb-name">${p.name || "Guest"}</span><span>${p.score}</span></div>`;
     });
