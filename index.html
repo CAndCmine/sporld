@@ -1,80 +1,167 @@
-const express = require('express');
-const app = express();
-const server = require('http').createServer(app);
-const io = require('socket.io')(server, { cors: { origin: "*" } });
+<!DOCTYPE html>
+<html>
+<head>
+<title>Sporld IO</title>
+<style>
+body { margin: 0; background: #1a1a1a; overflow: hidden; font-family: sans-serif; color: white; touch-action: none; }
+canvas { display: block; width: 100vw; height: 100vh; }
+#ui-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 100;
+}
+.menu {
+    background: #222; padding: 40px; border-radius: 15px; text-align: center;
+    border: 2px solid #444;
+}
+input {
+    padding: 12px; font-size: 18px; border-radius: 5px; border: 2px solid #555;
+    background: #111; color: white; width: 200px; margin-bottom: 20px; outline: none;
+}
+button {
+    padding: 12px 40px; font-size: 18px; background: #008cff; color: white;
+    border: none; border-radius: 5px; cursor: pointer; font-weight: bold;
+}
+#leaderboard {
+    position: fixed; top: 20px; right: 20px; background: rgba(0, 0, 0, 0.4);
+    padding: 12px; border-radius: 5px; min-width: 140px; pointer-events: none; z-index: 5;
+}
+</style>
+</head>
+<body>
+<div id="ui-overlay">
+    <div class="menu">
+        <input type="text" id="nickInput" placeholder="Nickname" maxlength="10">
+        <br>
+        <button id="playBtn">Join game</button>
+    </div>
+</div>
+<div id="leaderboard"></div>
+<canvas id="canvas"></canvas>
 
-const players = {};
-const bullets = [];
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const ui = document.getElementById('ui-overlay');
+const nickInput = document.getElementById('nickInput');
+const lbElement = document.getElementById('leaderboard');
+const socket = io(window.location.hostname === "localhost" ? 'http://localhost:3000' : 'https://sporld-server.onrender.com');
 
-io.on('connection', (socket) => {
-    players[socket.id] = {
-        x: 1000,
-        y: 1000,
-        angle: 0,
-        name: "Guest",
-        score: 0,
-        color: `#${Math.floor(Math.random()*16777215).toString(16)}`
-    };
+let gameStarted = false;
+let players = {};
+let bullets = [];
+let myPos = { x: 1000, y: 1000, angle: 0, name: "" };
+let mousePos = { x: 0, y: 0 };
+const keys = {};
+const MAP_SIZE = 2000;
 
-    socket.on('join', name => {
-        if (players[socket.id]) players[socket.id].name = name || "Guest";
-    });
+socket.on('update', data => {
+    players = data.players || {};
+    bullets = data.bullets || [];
+    updateLeaderboard();
+});
 
-    socket.on('move', data => {
-        if (players[socket.id]) Object.assign(players[socket.id], data);
-    });
+document.getElementById('playBtn').onclick = () => {
+    myPos.name = nickInput.value.trim() || "Guest";
+    socket.emit('join', myPos.name);
+    ui.style.display = 'none';
+    gameStarted = true;
+};
 
-    socket.on('fire', data => {
-        if (!players[socket.id]) return;
-       
-        bullets.push({
-            x: data.x + Math.cos(data.angle) * 40,
-            y: data.y + Math.sin(data.angle) * 40,
-            angle: data.angle,
-            speed: 18,
-            life: 80,
-            owner: socket.id
-        });
-    });
+window.onkeydown = e => keys[e.key.toLowerCase()] = true;
+window.onkeyup = e => keys[e.key.toLowerCase()] = false;
+window.onmousemove = e => { mousePos.x = e.clientX; mousePos.y = e.clientY; };
 
-    socket.on('disconnect', () => {
-        delete players[socket.id];
-    });
+window.addEventListener('mousedown', () => {
+    if (!gameStarted) return;
+    socket.emit('fire', { x: myPos.x, y: myPos.y, angle: myPos.angle });
 });
 
 setInterval(() => {
-    for (let id in players) {
-        players[id].score += 0.01;
-    }
+    if (!gameStarted) return;
+    let moveX = 0, moveY = 0;
+    if (keys.w || keys.arrowup) moveY -= 5;
+    if (keys.s || keys.arrowdown) moveY += 5;
+    if (keys.a || keys.arrowleft) moveX -= 5;
+    if (keys.d || keys.arrowright) moveX += 5;
 
-    for (let i = bullets.length - 1; i >= 0; i--) {
-        const b = bullets[i];
-        b.x += Math.cos(b.angle) * b.speed;
-        b.y += Math.sin(b.angle) * b.speed;
-        b.life--;
-
-        let hit = false;
-        for (let id in players) {
-            const p = players[id];
-            const dx = b.x - p.x;
-            const dy = b.y - p.y;
-            const dist = Math.sqrt(dx*dx + dy*dy);
-            if (dist < 28 && b.owner !== id) {
-                if (players[b.owner]) {
-                    players[b.owner].score += 10;
-                }
-                hit = true;
-                break;
-            }
-        }
-
-        if (hit || b.life <= 0 || b.x < 0 || b.x > 2000 || b.y < 0 || b.y > 2000) {
-            bullets.splice(i, 1);
-        }
-    }
-
-    io.emit('update', { players, bullets });
+    myPos.angle = Math.atan2(mousePos.y - window.innerHeight / 2, mousePos.x - window.innerWidth / 2);
+    myPos.x = Math.max(0, Math.min(MAP_SIZE, myPos.x + moveX));
+    myPos.y = Math.max(0, Math.min(MAP_SIZE, myPos.y + moveY));
+   
+    socket.emit('move', { x: myPos.x, y: myPos.y, angle: myPos.angle });
 }, 16);
 
-server.listen(process.env.PORT || 3000);
-console.log("Server running on port", process.env.PORT || 3000);
+function updateLeaderboard() {
+    let sorted = Object.values(players).sort((a, b) => b.score - a.score).slice(0, 5);
+    lbElement.innerHTML = sorted.map(p => `<div>${p.name || "Guest"}: ${Math.floor(p.score || 0)}</div>`).join('');
+}
+
+function drawPlayer(x, y, angle, name, color) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.fillStyle = color;
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 6;
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    ctx.moveTo(25, 0);
+    ctx.lineTo(-20, 22);
+    ctx.lineTo(-20, -22);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.fillStyle = "white";
+    ctx.textAlign = "center";
+    ctx.font = "bold 14px sans-serif";
+    ctx.fillText(name, x, y - 45);
+}
+
+function render() {
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = window.innerWidth * dpr;
+    canvas.height = window.innerHeight * dpr;
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
+    if (!gameStarted) {
+        requestAnimationFrame(render);
+        return;
+    }
+
+    ctx.save();
+    ctx.translate(window.innerWidth / 2 - myPos.x, window.innerHeight / 2 - myPos.y);
+
+    ctx.strokeStyle = "#333";
+    for (let i = 0; i <= MAP_SIZE; i += 100) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, MAP_SIZE); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(MAP_SIZE, i); ctx.stroke();
+    }
+
+    ctx.fillStyle = "#ff0000";
+    for(let b of bullets) {
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, 8, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    Object.keys(players).forEach(id => {
+        if (id !== socket.id) {
+            const p = players[id];
+            drawPlayer(p.x, p.y, p.angle, p.name || "Guest", "rgba(255,255,255,0.8)");
+        }
+    });
+
+    drawPlayer(myPos.x, myPos.y, myPos.angle, myPos.name, "#008cff");
+    ctx.restore();
+
+    requestAnimationFrame(render);
+}
+
+render();
+</script>
+</body>
+</html>
