@@ -1,23 +1,23 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Sporld IO - Debug Mode</title>
+    <title>Sporld IO</title>
     <style>
         body { margin: 0; background: #1a1a1a; overflow: hidden; font-family: sans-serif; }
-        canvas { display: block; width: 100vw; height: 100vh; }
-        #debug { position: absolute; top: 10; left: 10; color: lime; font-family: monospace; pointer-events: none; background: rgba(0,0,0,0.5); padding: 10px; }
+        canvas { display: block; width: 100vw; height: 100vh; image-rendering: pixelated; }
     </style>
 </head>
 <body>
-<div id="debug">Connecting...</div>
 <canvas id="canvas"></canvas>
 
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script>
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-const debug = document.getElementById('debug');
-const socket = io('https://sporld-server.onrender.com', { transports: ['websocket'] });
+const socket = io('https://sporld-server.onrender.com', {
+    transports: ['websocket'],
+    upgrade: false
+});
 
 let myName = prompt("Nickname:") || "Guest";
 socket.emit('join', myName);
@@ -27,37 +27,50 @@ let myPos = { x: 1000, y: 1000, angle: 0 };
 let mousePos = { x: 0, y: 0 };
 const keys = {};
 
-window.onkeydown = e => keys[e.key.toLowerCase()] = true;
-window.onkeyup = e => keys[e.key.toLowerCase()] = false;
-window.onmousemove = e => { mousePos.x = e.clientX; mousePos.y = e.clientY; };
+const SPEED = 5;
+const MAP_SIZE = 2000;
+const PLAYER_LENGTH = 25;
+const PLAYER_WIDTH = 20;
 
 function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = window.innerWidth * dpr;
+    canvas.height = window.innerHeight * dpr;
+    canvas.style.width = window.innerWidth + 'px';
+    canvas.style.height = window.innerHeight + 'px';
 }
-window.onresize = resize;
+window.addEventListener('resize', resize);
 resize();
 
-setInterval(() => {
-    if (keys.w) myPos.y -= 5;
-    if (keys.s) myPos.y += 5;
-    if (keys.a) myPos.x -= 5;
-    if (keys.d) myPos.x += 5;
+window.onkeydown = e => keys[e.key.toLowerCase()] = true;
+window.onkeyup = e => keys[e.key.toLowerCase()] = false;
+window.onmousemove = e => {
+    mousePos.x = e.clientX;
+    mousePos.y = e.clientY;
+};
 
-    myPos.angle = Math.atan2(mousePos.y - window.innerHeight / 2, mousePos.x - window.innerWidth / 2);
-    
-    socket.emit('move', { x: myPos.x, y: myPos.y, angle: myPos.angle });
+setInterval(() => {
+    if (keys.w || keys.arrowup)    myPos.y -= SPEED;
+    if (keys.s || keys.arrowdown)  myPos.y += SPEED;
+    if (keys.a || keys.arrowleft)  myPos.x -= SPEED;
+    if (keys.d || keys.arrowright) myPos.x += SPEED;
+
+    myPos.x = Math.max(0, Math.min(MAP_SIZE, myPos.x));
+    myPos.y = Math.max(0, Math.min(MAP_SIZE, myPos.y));
+
+    let centerX = window.innerWidth / 2;
+    let centerY = window.innerHeight / 2;
+    myPos.angle = Math.atan2(mousePos.y - centerY, mousePos.x - centerX);
+
+    socket.emit('move', {
+        x: myPos.x,
+        y: myPos.y,
+        angle: myPos.angle
+    });
 }, 16);
 
 socket.on('update', data => {
     players = data;
-    let otherPlayers = Object.keys(data).filter(id => id !== socket.id);
-    if (otherPlayers.length > 0) {
-        let firstOther = data[otherPlayers[0]];
-        debug.innerHTML = `My Angle: ${myPos.angle.toFixed(2)}<br>Other Angle: ${firstOther.angle.toFixed(2)}`;
-    } else {
-        debug.innerHTML = "Waiting for another player...";
-    }
 });
 
 function renderPlayer(x, y, angle, color, name) {
@@ -65,34 +78,58 @@ function renderPlayer(x, y, angle, color, name) {
     ctx.translate(x, y);
     ctx.rotate(angle);
     ctx.beginPath();
-    ctx.moveTo(25, 0);
-    ctx.lineTo(-20, 20);
-    ctx.lineTo(-20, -20);
+    ctx.moveTo(PLAYER_LENGTH, 0);
+    ctx.lineTo(-PLAYER_WIDTH, PLAYER_WIDTH);
+    ctx.lineTo(-PLAYER_WIDTH, -PLAYER_WIDTH);
     ctx.closePath();
-    ctx.lineWidth = 10;
+    ctx.lineJoin = "round";
+    ctx.lineWidth = 12; 
     ctx.strokeStyle = "white";
+    ctx.stroke();
+    ctx.lineWidth = 8;
+    ctx.strokeStyle = "black";
     ctx.stroke();
     ctx.fillStyle = color;
     ctx.fill();
     ctx.restore();
+
     ctx.fillStyle = "white";
+    ctx.font = "14px Arial";
     ctx.textAlign = "center";
     ctx.fillText(name, x, y - 45);
 }
 
 function render() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const dpr = window.devicePixelRatio || 1;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
     ctx.save();
-    ctx.translate(canvas.width / 2 - myPos.x, canvas.height / 2 - myPos.y);
+    ctx.translate(window.innerWidth / 2 - myPos.x, window.innerHeight / 2 - myPos.y);
+
+    ctx.strokeStyle = "#333";
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= MAP_SIZE; i += 100) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, MAP_SIZE); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(MAP_SIZE, i); ctx.stroke();
+    }
+
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 4;
+    ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
 
     for (let id in players) {
         const p = players[id];
+        if (!p) continue;
+
         if (id === socket.id) {
-            renderPlayer(myPos.x, myPos.y, myPos.angle, "blue", myName);
+            renderPlayer(myPos.x, myPos.y, myPos.angle, 'rgb(50, 50, 50)', myName);
         } else {
-            renderPlayer(p.x, p.y, p.angle, "red", p.name);
+            let otherAngle = typeof p.angle === 'number' ? p.angle : 0;
+            renderPlayer(p.x, p.y, otherAngle, 'rgb(30, 30, 30)', p.name || "Guest");
         }
     }
+
     ctx.restore();
     requestAnimationFrame(render);
 }
