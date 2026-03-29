@@ -24,14 +24,13 @@
         const keys = {};
         const SPEED = 5;
         const MAP_SIZE = 2000;
-        let zoom = 1;
 
         function resize() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            // Adaptive zoom to fit laptop screens
-            const ratio = Math.min(canvas.width / 1200, canvas.height / 800);
-            zoom = ratio;
+            const dpr = window.devicePixelRatio || 1;
+            canvas.style.width = window.innerWidth + 'px';
+            canvas.style.height = window.innerHeight + 'px';
+            canvas.width = window.innerWidth * dpr;
+            canvas.height = window.innerHeight * dpr;
         }
         window.addEventListener('resize', resize);
         resize();
@@ -43,7 +42,6 @@
             mousePos.y = e.clientY; 
         };
 
-        // Network & Logic Loop
         setInterval(() => {
             if (keys.w || keys.arrowup)    myPos.y -= SPEED;
             if (keys.s || keys.arrowdown)  myPos.y += SPEED;
@@ -53,34 +51,30 @@
             myPos.x = Math.max(0, Math.min(MAP_SIZE, myPos.x));
             myPos.y = Math.max(0, Math.min(MAP_SIZE, myPos.y));
             
-            // Calculate angle based on center of screen
-            myPos.angle = Math.atan2(mousePos.y - canvas.height/2, mousePos.x - canvas.width/2);
+            myPos.angle = Math.atan2(mousePos.y - window.innerHeight/2, mousePos.x - window.innerWidth/2);
             
-            // EMIT EVERYTHING TO SERVER
             socket.emit('move', { x: myPos.x, y: myPos.y, angle: myPos.angle });
         }, 16);
 
         socket.on('update', data => { players = data; });
 
         function render() {
-            ctx.setTransform(1, 0, 0, 1, 0, 0);
-            ctx.fillStyle = '#1a1a1a';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            const dpr = window.devicePixelRatio || 1;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
-            ctx.translate(canvas.width / 2, canvas.height / 2);
-            ctx.scale(zoom, zoom);
-            ctx.translate(-myPos.x, -myPos.y);
+            ctx.save();
+            ctx.translate(window.innerWidth / 2 - myPos.x, window.innerHeight / 2 - myPos.y);
 
-            // World Grid
             ctx.strokeStyle = "#333";
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 1;
             for (let i = 0; i <= MAP_SIZE; i += 100) {
                 ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, MAP_SIZE); ctx.stroke();
                 ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(MAP_SIZE, i); ctx.stroke();
             }
 
             ctx.strokeStyle = "white";
-            ctx.lineWidth = 5;
+            ctx.lineWidth = 4;
             ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
 
             for (let id in players) {
@@ -97,18 +91,19 @@
                 
                 ctx.fillStyle = isMe ? '#4CAF50' : '#e74c3c';
                 ctx.beginPath();
-                ctx.moveTo(30, 0);
-                ctx.lineTo(-20, 18);
-                ctx.lineTo(-20, -18);
+                ctx.moveTo(25, 0);
+                ctx.lineTo(-15, 15);
+                ctx.lineTo(-15, -15);
                 ctx.closePath();
                 ctx.fill();
                 ctx.restore();
 
                 ctx.fillStyle = "white";
-                ctx.font = "bold 20px Arial";
+                ctx.font = "bold 16px Arial";
                 ctx.textAlign = "center";
-                ctx.fillText(p.name || "Guest", x, y - 40);
+                ctx.fillText(p.name || "Guest", x, y - 35);
             }
+            ctx.restore();
 
             requestAnimationFrame(render);
         }
