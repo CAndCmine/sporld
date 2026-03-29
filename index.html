@@ -34,25 +34,11 @@ button:hover { background: #0072d1; }
     opacity: 0.5;
 }
 #leaderboard {
-    position: fixed; 
-    top: 20px; 
-    right: 20px; 
-    background: rgba(0, 0, 0, 0.4); 
-    padding: 12px 15px 18px 15px;
-    border-radius: 5px; 
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    min-width: 140px; 
-    pointer-events: none; 
-    z-index: 5;
+    position: fixed; top: 20px; right: 20px; background: rgba(0, 0, 0, 0.4); 
+    padding: 12px 15px 18px 15px; border-radius: 5px; border: 1px solid rgba(255, 255, 255, 0.1);
+    min-width: 140px; pointer-events: none; z-index: 5;
 }
-
-.lb-item { 
-    display: flex; 
-    justify-content: space-between; 
-    font-size: 14px; 
-    padding: 4px 0;
-    font-weight: normal; 
-}
+.lb-item { display: flex; justify-content: space-between; font-size: 14px; padding: 4px 0; font-weight: normal; }
 .lb-name { margin-right: 20px; color: rgba(255,255,255,0.9); }
 .lb-score { color: rgba(255,255,255,0.6); }
 </style>
@@ -87,6 +73,7 @@ const SERVER_URL = window.location.hostname === "localhost" || window.location.h
 const socket = io(SERVER_URL);
 let gameStarted = false;
 let players = {};
+let bullets = {};
 let myPos = { x: 1000, y: 1000, angle: 0, name: "" };
 let mousePos = { x: 0, y: 0 };
 const keys = {};
@@ -98,7 +85,8 @@ if ('ontouchstart' in window) joyCheck.checked = true;
 
 socket.on('connect', () => { statusText.innerText = "Connected"; statusText.style.color = "white"; });
 socket.on('update', data => { 
-    players = data; 
+    players = data.players; 
+    bullets = data.bullets;
     updateLeaderboard();
 });
 
@@ -114,6 +102,10 @@ document.getElementById('playBtn').onclick = () => {
 window.onkeydown = e => keys[e.key.toLowerCase()] = true;
 window.onkeyup = e => keys[e.key.toLowerCase()] = false;
 window.onmousemove = e => { mousePos.x = e.clientX; mousePos.y = e.clientY; };
+window.onmousedown = () => {
+    if (!gameStarted) return;
+    socket.emit('fire', { x: myPos.x, y: myPos.y, angle: myPos.angle });
+};
 
 joyContainer.ontouchstart = () => { joystickActive = true; };
 window.ontouchend = () => { joystickActive = false; joystickData = { x: 0, y: 0 }; joyKnob.style.transform = `translate(-50%, -50%)`; };
@@ -181,6 +173,13 @@ function drawPlayer(x, y, angle, color, name) {
     ctx.fillText(name, x, y - 45);
 }
 
+function drawBullet(x, y) {
+    ctx.fillStyle = "white";
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, Math.PI * 2);
+    ctx.fill();
+}
+
 function render() {
     const dpr = window.devicePixelRatio || 1;
     canvas.width = window.innerWidth * dpr;
@@ -198,20 +197,20 @@ function render() {
     ctx.strokeStyle = "white";
     ctx.lineWidth = 2;
     ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
-    let foundMyself = false;
+    
     for (let id in players) {
         const p = players[id];
-        const playerColor = (id === socket.id) ? "rgb(255, 255, 255)" : "rgb(255, 255, 255)";
+        const playerColor = "rgb(255, 255, 255)";
         const playerName = p.name || "Guest";
         if (id === socket.id) {
-            foundMyself = true;
             drawPlayer(myPos.x, myPos.y, myPos.angle, playerColor, playerName);
         } else {
             drawPlayer(p.x, p.y, p.angle, playerColor, playerName);
         }
     }
-    if (!foundMyself && gameStarted) {
-        drawPlayer(myPos.x, myPos.y, myPos.angle, "rgb(255, 255, 255)", myPos.name || "Guest");
+    for (let id in bullets) {
+        const b = bullets[id];
+        drawBullet(b.x, b.y);
     }
     ctx.restore();
     requestAnimationFrame(render);
