@@ -4,7 +4,7 @@
     <title>Sporld IO</title>
     <style>
         body { margin: 0; background: #1a1a1a; overflow: hidden; font-family: sans-serif; }
-        canvas { display: block; width: 100vw; height: 100vh; }
+        canvas { display: block; width: 100vw; height: 100vh; image-rendering: pixelated; }
     </style>
 </head>
 <body>
@@ -14,15 +14,32 @@
 <script>
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-const socket = io('https://sporld-server.onrender.com', { transports: ['websocket'] });
+const socket = io('https://sporld-server.onrender.com', {
+    transports: ['websocket']
+});
 
 const myName = prompt("Nickname:") || "Guest";
 socket.emit('join', myName);
 
 let players = {};
 let myPos = { x: 1000, y: 1000, angle: 0 };
-let mousePos = { x: 0, y: 0 };
+let mousePos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
 const keys = {};
+
+const SPEED = 5;
+const MAP_SIZE = 2000;
+const PLAYER_LENGTH = 25;
+const PLAYER_WIDTH = 20;
+
+function resize() {
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = window.innerWidth * dpr;
+    canvas.height = window.innerHeight * dpr;
+    canvas.style.width = window.innerWidth + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+}
+window.addEventListener('resize', resize);
+resize();
 
 window.onkeydown = e => keys[e.key.toLowerCase()] = true;
 window.onkeyup = e => keys[e.key.toLowerCase()] = false;
@@ -31,66 +48,86 @@ window.onmousemove = e => {
     mousePos.y = e.clientY;
 };
 
-function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-}
-window.onresize = resize;
-resize();
-
 setInterval(() => {
-    if (keys.w || keys.arrowup)    myPos.y -= 5;
-    if (keys.s || keys.arrowdown)  myPos.y += 5;
-    if (keys.a || keys.arrowleft)  myPos.x -= 5;
-    if (keys.d || keys.arrowright) myPos.x += 5;
+    if (keys.w || keys.arrowup)    myPos.y -= SPEED;
+    if (keys.s || keys.arrowdown)  myPos.y += SPEED;
+    if (keys.a || keys.arrowleft)  myPos.x -= SPEED;
+    if (keys.d || keys.arrowright) myPos.x += SPEED;
+
+    myPos.x = Math.max(0, Math.min(MAP_SIZE, myPos.x));
+    myPos.y = Math.max(0, Math.min(MAP_SIZE, myPos.y));
 
     myPos.angle = Math.atan2(
-        mousePos.y - (window.innerHeight / 2),
-        mousePos.x - (window.innerWidth / 2)
+        mousePos.y - window.innerHeight / 2,
+        mousePos.x - window.innerWidth / 2
     );
 
-    socket.emit('move', { x: myPos.x, y: myPos.y, angle: myPos.angle });
+    socket.emit('move', {
+        x: myPos.x,
+        y: myPos.y,
+        angle: myPos.angle
+    });
 }, 16);
 
 socket.on('update', data => {
     players = data;
 });
 
-function drawPlayer(x, y, angle, name) {
+function renderPlayer(x, y, angle, color) {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle);
     ctx.beginPath();
-    ctx.moveTo(25, 0);
-    ctx.lineTo(-20, 20);
-    ctx.lineTo(-20, -20);
+    ctx.moveTo(PLAYER_LENGTH, 0);
+    ctx.lineTo(-PLAYER_WIDTH, PLAYER_WIDTH);
+    ctx.lineTo(-PLAYER_WIDTH, -PLAYER_WIDTH);
     ctx.closePath();
-    ctx.lineWidth = 10;
+    ctx.lineJoin = "round";
+    ctx.lineWidth = 12; 
     ctx.strokeStyle = "white";
     ctx.stroke();
-    ctx.fillStyle = "black";
+    ctx.lineWidth = 8;
+    ctx.strokeStyle = "black";
+    ctx.stroke();
+    ctx.fillStyle = color;
     ctx.fill();
     ctx.restore();
-
-    ctx.fillStyle = "white";
-    ctx.textAlign = "center";
-    ctx.font = "14px Arial";
-    ctx.fillText(name, x, y - 40);
 }
 
 function render() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
+    const dpr = window.devicePixelRatio || 1;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
     ctx.save();
-    ctx.translate((canvas.width / 2) - myPos.x, (canvas.height / 2) - myPos.y);
+    ctx.translate(window.innerWidth / 2 - myPos.x, window.innerHeight / 2 - myPos.y);
+
+    ctx.strokeStyle = "#333";
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= MAP_SIZE; i += 100) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, MAP_SIZE); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(MAP_SIZE, i); ctx.stroke();
+    }
+
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 4;
+    ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
 
     for (let id in players) {
         const p = players[id];
-        if (id === socket.id) {
-            drawPlayer(myPos.x, myPos.y, myPos.angle, myName);
-        } else {
-            drawPlayer(p.x, p.y, p.angle, p.name);
-        }
+        if (!p) continue;
+
+        const isMe = (id === socket.id);
+        const x = isMe ? myPos.x : (typeof p.x === 'number' ? p.x : 0);
+        const y = isMe ? myPos.y : (typeof p.y === 'number' ? p.y : 0);
+        const angle = isMe ? myPos.angle : (typeof p.angle === 'number' ? p.angle : 0);
+
+        renderPlayer(x, y, angle, 'rgb(30, 30, 30)');
+
+        ctx.fillStyle = "white";
+        ctx.font = "13px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(p.name || "Guest", x, y - 45);
     }
 
     ctx.restore();
