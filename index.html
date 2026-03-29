@@ -80,7 +80,10 @@ function renderPlayer(x, y, angle, color) {
     ctx.fillStyle = color;
 
     ctx.lineJoin = "round";
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 5;
+    
+    ctx.strokeStyle = "white";
+    ctx.stroke()
     
     ctx.beginPath();
     ctx.moveTo(PLAYER_LENGTH, 0);
