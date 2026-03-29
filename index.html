@@ -58,6 +58,12 @@ const MAP_SIZE = 2000;
 socket.on('update', data => {
     players = data.players || {};
     bullets = data.bullets || [];
+    if (players[socket.id]) {
+        myPos.x = players[socket.id].x;
+        myPos.y = players[socket.id].y;
+        myPos.angle = players[socket.id].angle;
+        myPos.name = players[socket.id].name;
+    }
     updateLeaderboard();
 });
 
@@ -149,15 +155,15 @@ function render() {
     }
 
     Object.keys(players).forEach(id => {
-        if (id !== socket.id) {
-            const p = players[id];
-            drawPlayer(p.x, p.y, p.angle, p.name || "Guest", "rgba(255,255,255,0.8)");
+        const p = players[id];
+        if (id === socket.id) {
+            drawPlayer(myPos.x, myPos.y, myPos.angle, myPos.name, "#008cff");
+        } else {
+            drawPlayer(p.x, p.y, p.angle, p.name || "Guest", p.color || "rgba(255,255,255,0.8)");
         }
     });
 
-    drawPlayer(myPos.x, myPos.y, myPos.angle, myPos.name, "#008cff");
     ctx.restore();
-
     requestAnimationFrame(render);
 }
 
