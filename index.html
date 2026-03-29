@@ -135,9 +135,8 @@ setInterval(() => {
 
 function updateLeaderboard() {
     let sorted = Object.values(players).sort((a, b) => b.score - a.score).slice(0, 5);
-    let html = '<div style="font-size:10px; color:#888; margin-bottom:5px;">Leaderboard</div>';
     sorted.forEach(p => {
-        html += `<div class="lb-item"><span class="lb-name">${p.name || "Guest"}</span><span>${p.score}</span></div>`;
+        html += `<div class="lb-item" style='padding-bottom=15px'><span class="lb-name">${p.name || "Guest"}</span><span>${p.score}</span></div>`;
     });
     lbElement.innerHTML = html;
 }
