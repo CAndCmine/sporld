@@ -35,10 +35,6 @@ button:hover { background: #0072d1; }
 <div id="ui-overlay">
     <div class="menu">
         <input type="text" id="nickInput" placeholder="Nickname" maxlength="10">
-        <div style="margin-bottom: 20px; font-size: 14px; color: #bbb;">
-            <input type="checkbox" id="joyCheck" style="width: auto; margin: 0; vertical-align: middle;">
-            <label for="joyCheck" style="margin-left: 8px;">Enable Mobile Joystick</label>
-        </div>
         <button id="playBtn">Join game</button>
         <div id="status">Connecting...</div>
     </div>
@@ -53,12 +49,11 @@ const ui = document.getElementById('ui-overlay');
 const statusText = document.getElementById('status');
 const nickInput = document.getElementById('nickInput');
 const lbElement = document.getElementById('leaderboard');
-
 const socket = io(window.location.hostname === "localhost" ? 'http://localhost:3000' : 'https://sporld-server.onrender.com');
 
 let gameStarted = false;
 let players = {};
-let myBullets = [];
+let bullets = {};
 let myPos = { x: 1000, y: 1000, angle: 0, name: "" };
 let mousePos = { x: 0, y: 0 };
 const keys = {};
@@ -70,7 +65,8 @@ socket.on('connect', () => {
 });
 
 socket.on('update', data => { 
-    players = data || {}; 
+    players = data.players || {}; 
+    bullets = data.bullets || {};
     updateLeaderboard();
 });
 
@@ -86,7 +82,7 @@ window.onkeyup = e => keys[e.key.toLowerCase()] = false;
 window.onmousemove = e => { mousePos.x = e.clientX; mousePos.y = e.clientY; };
 window.onmousedown = () => {
     if (!gameStarted) return;
-    myBullets.push({ x: myPos.x, y: myPos.y, angle: myPos.angle, speed: 15, life: 100 });
+    socket.emit('fire', { x: myPos.x, y: myPos.y, angle: myPos.angle });
 };
 
 setInterval(() => {
@@ -101,13 +97,6 @@ setInterval(() => {
     myPos.x = Math.max(0, Math.min(MAP_SIZE, myPos.x + moveX));
     myPos.y = Math.max(0, Math.min(MAP_SIZE, myPos.y + moveY));
     
-    for (let i = myBullets.length - 1; i >= 0; i--) {
-        let b = myBullets[i];
-        b.x += Math.cos(b.angle) * b.speed;
-        b.y += Math.sin(b.angle) * b.speed;
-        b.life--;
-        if (b.life <= 0) myBullets.splice(i, 1);
-    }
     socket.emit('move', { x: myPos.x, y: myPos.y, angle: myPos.angle });
 }, 16);
 
@@ -143,13 +132,8 @@ function render() {
     canvas.width = window.innerWidth * dpr;
     canvas.height = window.innerHeight * dpr;
     ctx.scale(dpr, dpr);
-    
     ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-    
-    if (!gameStarted) { 
-        requestAnimationFrame(render); 
-        return; 
-    }
+    if (!gameStarted) { requestAnimationFrame(render); return; }
 
     ctx.save();
     ctx.translate(window.innerWidth / 2 - myPos.x, window.innerHeight / 2 - myPos.y);
@@ -162,7 +146,7 @@ function render() {
     }
 
     ctx.fillStyle = "#ff4444";
-    myBullets.forEach(b => {
+    Object.values(bullets).forEach(b => {
         ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, Math.PI * 2); ctx.fill();
     });
 
@@ -174,7 +158,6 @@ function render() {
     });
 
     drawPlayer(myPos.x, myPos.y, myPos.angle, myPos.name, "#008cff");
-
     ctx.restore();
     requestAnimationFrame(render);
 }
