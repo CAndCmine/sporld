@@ -83,19 +83,18 @@ function renderPlayer(x, y, angle, color) {
     ctx.lineTo(-PLAYER_WIDTH, -PLAYER_WIDTH);
     ctx.closePath();
 
-    ctx.lineJoin = "round"; 
-    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
 
-    ctx.fillStyle = color;
-    ctx.fill();
+    ctx.lineWidth = 10; 
+    ctx.strokeStyle = "white";
+    ctx.stroke();
 
     ctx.lineWidth = 6;
     ctx.strokeStyle = "black";
     ctx.stroke();
 
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = "white";
-    ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.fill();
 
     ctx.restore();
 }
