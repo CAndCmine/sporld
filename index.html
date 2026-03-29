@@ -18,7 +18,9 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-const socket = io("https://sporld-server.onrender.com");
+const socket = io("https://sporld-server.onrender.com", {
+    transports: ["websocket"]
+});
 
 let players = {};
 let myPos = { x: 500, y: 500, angle: 0 };
@@ -35,7 +37,7 @@ window.addEventListener("mousemove", e => {
 });
 
 socket.on("connect", () => {
-    console.log("Connected:", socket.id);
+    console.log("CONNECTED:", socket.id);
 });
 
 socket.on("update", data => {
@@ -55,11 +57,13 @@ function update() {
 
     myPos.angle = Math.atan2(dy, dx);
 
-    socket.emit("move", {
-        x: myPos.x,
-        y: myPos.y,
-        angle: myPos.angle
-    });
+    if (socket.connected) {
+        socket.emit("move", {
+            x: myPos.x,
+            y: myPos.y,
+            angle: myPos.angle
+        });
+    }
 }
 
 function drawTriangle(x, y, angle, color) {
@@ -88,12 +92,11 @@ function render() {
         const p = players[id];
         if (!p) continue;
 
-        const isMe = id === socket.id;
         drawTriangle(
             p.x,
             p.y,
-            p.angle || 0,
-            isMe ? "gray" : "white"
+            typeof p.angle === "number" ? p.angle : 0,
+            id === socket.id ? "gray" : "white"
         );
     }
 }
