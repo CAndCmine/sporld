@@ -4,7 +4,7 @@
     <title>Sporld IO</title>
     <style>
         body { margin: 0; background: #1a1a1a; overflow: hidden; font-family: sans-serif; }
-        canvas { display: block; width: 100vw; height: 100vh; }
+        canvas { display: block; width: 100vw; height: 100vh; image-rendering: pixelated; }
     </style>
 </head>
 <body>
@@ -20,19 +20,22 @@ const myName = prompt("Nickname:") || "Guest";
 socket.emit('join', myName);
 
 let players = {};
-let bullets = [];
 let myPos = { x: 1000, y: 1000, angle: 0 };
 let mousePos = { x: 0, y: 0 };
 const keys = {};
 
 const SPEED = 5;
 const MAP_SIZE = 2000;
+
 const PLAYER_LENGTH = 25;
 const PLAYER_WIDTH = 20;
 
 function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = window.innerWidth * dpr;
+    canvas.height = window.innerHeight * dpr;
+    canvas.style.width = window.innerWidth + 'px';
+    canvas.style.height = window.innerHeight + 'px';
 }
 window.addEventListener('resize', resize);
 resize();
@@ -42,10 +45,6 @@ window.onkeyup = e => keys[e.key.toLowerCase()] = false;
 window.onmousemove = e => {
     mousePos.x = e.clientX;
     mousePos.y = e.clientY;
-};
-
-window.onmousedown = () => {
-    socket.emit('shoot');
 };
 
 setInterval(() => {
@@ -69,48 +68,47 @@ setInterval(() => {
     });
 }, 16);
 
-// Make sure we safely grab the objects sent by the server
 socket.on('update', data => {
-    if (data.players) players = data.players;
-    if (data.bullets) bullets = data.bullets;
+    players = data;
 });
 
-function renderPlayer(x, y, angle, color, name) {
+function renderPlayer(x, y, angle, color) {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle);
 
-    // Draw the ship triangle
+
     ctx.beginPath();
     ctx.moveTo(PLAYER_LENGTH, 0);
     ctx.lineTo(-PLAYER_WIDTH, PLAYER_WIDTH);
     ctx.lineTo(-PLAYER_WIDTH, -PLAYER_WIDTH);
     ctx.closePath();
 
+
     ctx.lineJoin = "round";
-    ctx.lineWidth = 6; 
+
+    ctx.lineWidth = 12; 
     ctx.strokeStyle = "white";
+    ctx.stroke();
+
+    ctx.lineWidth = 8;
+    ctx.strokeStyle = "black";
     ctx.stroke();
 
     ctx.fillStyle = color;
     ctx.fill();
-    ctx.restore();
 
-    // Draw the name tag
-    ctx.fillStyle = "white";
-    ctx.font = "bold 14px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText(name, x, y - 40);
+    ctx.restore();
 }
 
 function render() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const dpr = window.devicePixelRatio || 1;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
     ctx.save();
-    // Center camera on myPos
-    ctx.translate(canvas.width / 2 - myPos.x, canvas.height / 2 - myPos.y);
+    ctx.translate(window.innerWidth / 2 - myPos.x, window.innerHeight / 2 - myPos.y);
 
-    // Draw Grid
     ctx.strokeStyle = "#333";
     ctx.lineWidth = 1;
     for (let i = 0; i <= MAP_SIZE; i += 100) {
@@ -118,29 +116,27 @@ function render() {
         ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(MAP_SIZE, i); ctx.stroke();
     }
 
-    // Draw Map Borders
     ctx.strokeStyle = "white";
     ctx.lineWidth = 4;
     ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
 
-    // Draw Bullets
-    ctx.fillStyle = "#ff0";
-    bullets.forEach(b => {
-        ctx.beginPath();
-        ctx.arc(b.x, b.y, 5, 0, Math.PI * 2);
-        ctx.fill();
-    });
-
-    // Draw OTHER players (red)
     for (let id in players) {
-        if (id === socket.id) continue; // Skip ourselves in this loop
-        
         const p = players[id];
-        renderPlayer(p.x, p.y, p.angle || 0, "#ff4444", p.name || "Guest");
-    }
+        if (!p) continue;
 
-    // ALWAYS draw MY player (green) on top
-    renderPlayer(myPos.x, myPos.y, myPos.angle, "#00ff00", myName);
+        const isMe = (id === socket.id);
+
+        const x = isMe ? myPos.x : p.x;
+        const y = isMe ? myPos.y : p.y;
+        const angle = isMe ? myPos.angle : (typeof p.angle === "number" ? p.angle : 0);
+
+        renderPlayer(x, y, angle, isMe ? 'rgb(30, 30, 30)' : 'rgb(30, 30, 30)');
+
+        ctx.fillStyle = "white";
+        ctx.font = "13px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(p.name || myName, x, y - 45);
+    }
 
     ctx.restore();
     requestAnimationFrame(render);
@@ -149,3 +145,4 @@ render();
 </script>
 </body>
 </html>
+
