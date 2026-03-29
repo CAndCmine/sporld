@@ -69,6 +69,7 @@ const joyCheck = document.getElementById('joyCheck');
 const joyContainer = document.getElementById('joystick-container');
 const joyKnob = document.getElementById('joystick-knob');
 const lbElement = document.getElementById('leaderboard');
+
 const SERVER_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" ? 'http://localhost:3000' : 'https://sporld-server.onrender.com';
 const socket = io(SERVER_URL);
 
@@ -132,12 +133,14 @@ setInterval(() => {
     if (keys.s || keys.arrowdown) moveY += 5;
     if (keys.a || keys.arrowleft) moveX -= 5;
     if (keys.d || keys.arrowright) moveX += 5;
+    
     if (joystickActive) {
         moveX = joystickData.x * 5; moveY = joystickData.y * 5;
         myPos.angle = Math.atan2(moveY, moveX);
     } else {
         myPos.angle = Math.atan2(mousePos.y - window.innerHeight / 2, mousePos.x - window.innerWidth / 2);
     }
+    
     myPos.x = Math.max(0, Math.min(MAP_SIZE, myPos.x + moveX));
     myPos.y = Math.max(0, Math.min(MAP_SIZE, myPos.y + moveY));
     socket.emit('move', { x: myPos.x, y: myPos.y, angle: myPos.angle });
@@ -175,7 +178,7 @@ function drawPlayer(x, y, angle, color, name) {
 }
 
 function drawBullet(x, y) {
-    ctx.fillStyle = "#008cff"; // Blue bullets so they are visible against white players
+    ctx.fillStyle = "#008cff"; 
     ctx.beginPath();
     ctx.arc(x, y, 5, 0, Math.PI * 2);
     ctx.fill();
@@ -188,6 +191,11 @@ function render() {
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
     
+    if (!gameStarted) {
+        requestAnimationFrame(render);
+        return;
+    }
+
     ctx.save();
     ctx.translate(window.innerWidth / 2 - myPos.x, window.innerHeight / 2 - myPos.y);
     
@@ -197,19 +205,18 @@ function render() {
         ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, MAP_SIZE); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(MAP_SIZE, i); ctx.stroke();
     }
+    
     ctx.strokeStyle = "white";
     ctx.lineWidth = 2;
     ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
     
     for (let id in players) {
         const p = players[id];
-        const playerColor = "rgb(255, 255, 255)";
-        if (id === socket.id) {
-            drawPlayer(myPos.x, myPos.y, myPos.angle, playerColor, myPos.name || "Guest");
-        } else {
-            drawPlayer(p.x, p.y, p.angle, playerColor, p.name || "Guest");
-        }
+        if (id === socket.id) continue; 
+        drawPlayer(p.x, p.y, p.angle, "white", p.name || "Guest");
     }
+
+    drawPlayer(myPos.x, myPos.y, myPos.angle, "white", myPos.name || "Guest");
     
     for (let id in bullets) {
         const b = bullets[id];
