@@ -80,12 +80,11 @@ socket.on('update', data => {
     bullets = data.bullets || [];
 
     if (players[socket.id]) {
-        const serverSelf = players[socket.id];
-        const dist = Math.hypot(myPos.x - serverSelf.x, myPos.y - serverSelf.y);
-        
+        const s = players[socket.id];
+        const dist = Math.hypot(myPos.x - s.x, myPos.y - s.y);
         if (!hasSynced || dist > 100) {
-            myPos.x = serverSelf.x;
-            myPos.y = serverSelf.y;
+            myPos.x = s.x;
+            myPos.y = s.y;
             hasSynced = true;
         }
     }
@@ -112,7 +111,7 @@ function renderPlayer(x, y, angle, color, name) {
     ctx.restore();
 
     ctx.fillStyle = "white";
-    ctx.font = "bold 14px Arial";
+    ctx.font = "14px Arial";
     ctx.textAlign = "center";
     ctx.fillText(name, x, y - 45);
 }
@@ -136,23 +135,20 @@ function render() {
     ctx.lineWidth = 4;
     ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
 
-    ctx.fillStyle = "#ff4444";
+    ctx.fillStyle = "white";
     bullets.forEach(b => {
         ctx.beginPath();
-        ctx.arc(b.x, b.y, 6, 0, Math.PI * 2);
+        ctx.arc(b.x, b.y, 4, 0, Math.PI * 2);
         ctx.fill();
     });
 
     for (let id in players) {
+        if (id === socket.id) continue; 
         const p = players[id];
-        if (!p) continue;
-
-        if (id === socket.id) {
-            renderPlayer(myPos.x, myPos.y, myPos.angle, '#00ff00', myName);
-        } else {
-            renderPlayer(p.x, p.y, p.angle || 0, '#555555', p.name || "Guest");
-        }
+        renderPlayer(p.x, p.y, p.angle || 0, 'rgb(60, 60, 60)', p.name || "Guest");
     }
+
+    renderPlayer(myPos.x, myPos.y, myPos.angle, 'rgb(130, 130, 130)', myName);
 
     ctx.restore();
     requestAnimationFrame(render);
