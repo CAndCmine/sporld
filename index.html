@@ -34,12 +34,13 @@ button:hover { background: #0072d1; }
     opacity: 0.5;
 }
 #leaderboard {
-    position: fixed; top: 20px; right: 20px; background: rgba(0, 0, 0, 0.5); 
-    padding: 10px; border-radius: 5px; border: 1px solid rgba(255, 255, 255, 0.1);
-    min-width: 120px; pointer-events: none; z-index: 5;
+    position: fixed; top: 20px; right: 20px; background: rgba(0, 0, 0, 0.4); 
+    padding: 10px 15px; border-radius: 5px; border: 1px solid rgba(255, 255, 255, 0.1);
+    min-width: 140px; pointer-events: none; z-index: 5;
 }
-.lb-item { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 3px; font-weight: normal; }
-.lb-name { margin-right: 15px; }
+.lb-item { display: flex; justify-content: space-between; font-size: 14px; padding: 2px 0; font-weight: normal; }
+.lb-name { margin-right: 20px; color: rgba(255,255,255,0.9); }
+.lb-score { color: rgba(255,255,255,0.6); }
 </style>
 </head>
 <body>
@@ -139,7 +140,7 @@ function updateLeaderboard() {
     let sorted = Object.values(players).sort((a, b) => b.score - a.score).slice(0, 5);
     let html = "";
     sorted.forEach(p => {
-        html += `<div class="lb-item"><span class="lb-name">${p.name || "Guest"}</span><span>${p.score}</span></div>`;
+        html += `<div class="lb-item"><span class="lb-name">${p.name || "Guest"}</span><span class="lb-score">${Math.floor(p.score)}</span></div>`;
     });
     lbElement.innerHTML = html;
 }
@@ -159,13 +160,6 @@ function drawPlayer(x, y, angle, color, name) {
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
-    ctx.beginPath();
-    ctx.moveTo(12, 0); 
-    ctx.lineTo(-12, 11); 
-    ctx.lineTo(-12, -11);
-    ctx.closePath();
-    ctx.fill();
     ctx.restore();
     ctx.fillStyle = "white";
     ctx.font = "14px Arial";
