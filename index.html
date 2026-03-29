@@ -14,6 +14,7 @@
 <script>
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
+
 const socket = io('https://sporld-server.onrender.com', {
     transports: ['websocket'],
     upgrade: false
@@ -38,8 +39,6 @@ function resize() {
     const dpr = window.devicePixelRatio || 1;
     canvas.width = window.innerWidth * dpr;
     canvas.height = window.innerHeight * dpr;
-    canvas.style.width = window.innerWidth + 'px';
-    canvas.style.height = window.innerHeight + 'px';
 }
 window.addEventListener('resize', resize);
 resize();
@@ -55,6 +54,7 @@ window.onmousedown = () => {
     socket.emit('shoot');
 };
 
+// Movement loop
 setInterval(() => {
     if (keys.w || keys.arrowup)    myPos.y -= SPEED;
     if (keys.s || keys.arrowdown)  myPos.y += SPEED;
@@ -68,21 +68,18 @@ setInterval(() => {
     let centerY = window.innerHeight / 2;
     myPos.angle = Math.atan2(mousePos.y - centerY, mousePos.x - centerX);
 
-    socket.emit('move', {
-        x: myPos.x,
-        y: myPos.y,
-        angle: myPos.angle
-    });
+    socket.emit('move', { x: myPos.x, y: myPos.y, angle: myPos.angle });
 }, 16);
 
 socket.on('update', data => {
     players = data.players;
     bullets = data.bullets || [];
 
+    // Force sync if we get shot (server moves us)
     if (players[socket.id]) {
         const s = players[socket.id];
         const dist = Math.hypot(myPos.x - s.x, myPos.y - s.y);
-        if (!hasSynced || dist > 100) {
+        if (!hasSynced || dist > 150) {
             myPos.x = s.x;
             myPos.y = s.y;
             hasSynced = true;
@@ -122,8 +119,10 @@ function render() {
     ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
     ctx.save();
+    // Camera follows myPos
     ctx.translate(window.innerWidth / 2 - myPos.x, window.innerHeight / 2 - myPos.y);
 
+    // Grid
     ctx.strokeStyle = "#333";
     ctx.lineWidth = 1;
     for (let i = 0; i <= MAP_SIZE; i += 100) {
@@ -131,24 +130,28 @@ function render() {
         ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(MAP_SIZE, i); ctx.stroke();
     }
 
+    // Border
     ctx.strokeStyle = "white";
     ctx.lineWidth = 4;
     ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
 
+    // Draw Bullets
     ctx.fillStyle = "white";
     bullets.forEach(b => {
         ctx.beginPath();
-        ctx.arc(b.x, b.y, 4, 0, Math.PI * 2);
+        ctx.arc(b.x, b.y, 5, 0, Math.PI * 2);
         ctx.fill();
     });
 
+    // Draw Other Players
     for (let id in players) {
-        if (id === socket.id) continue; 
+        if (id === socket.id) continue;
         const p = players[id];
-        renderPlayer(p.x, p.y, p.angle || 0, 'rgb(60, 60, 60)', p.name || "Guest");
+        renderPlayer(p.x, p.y, p.angle, 'rgb(60, 60, 60)', p.name);
     }
 
-    renderPlayer(myPos.x, myPos.y, myPos.angle, 'rgb(130, 130, 130)', myName);
+    // Draw ME
+    renderPlayer(myPos.x, myPos.y, myPos.angle, 'rgb(100, 100, 100)', myName);
 
     ctx.restore();
     requestAnimationFrame(render);
