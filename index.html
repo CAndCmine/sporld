@@ -4,7 +4,7 @@
     <title>Sporld IO</title>
     <style>
         body { margin: 0; background: #1a1a1a; overflow: hidden; font-family: sans-serif; }
-        canvas { display: block; width: 100vw; height: 100vh; image-rendering: pixelated; }
+        canvas { display: block; width: 100vw; height: 100vh; }
     </style>
 </head>
 <body>
@@ -31,11 +31,8 @@ const PLAYER_LENGTH = 25;
 const PLAYER_WIDTH = 20;
 
 function resize() {
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = window.innerWidth * dpr;
-    canvas.height = window.innerHeight * dpr;
-    canvas.style.width = window.innerWidth + 'px';
-    canvas.style.height = window.innerHeight + 'px';
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 }
 window.addEventListener('resize', resize);
 resize();
@@ -77,7 +74,7 @@ socket.on('update', data => {
     bullets = data.bullets || [];
 });
 
-function renderPlayer(x, y, angle, color) {
+function renderPlayer(x, y, angle, color, name) {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle);
@@ -89,27 +86,25 @@ function renderPlayer(x, y, angle, color) {
     ctx.closePath();
 
     ctx.lineJoin = "round";
-    ctx.lineWidth = 12; 
+    ctx.lineWidth = 6; 
     ctx.strokeStyle = "white";
-    ctx.stroke();
-
-    ctx.lineWidth = 8;
-    ctx.strokeStyle = "black";
     ctx.stroke();
 
     ctx.fillStyle = color;
     ctx.fill();
-
     ctx.restore();
+
+    ctx.fillStyle = "white";
+    ctx.font = "bold 14px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(name, x, y - 40);
 }
 
 function render() {
-    const dpr = window.devicePixelRatio || 1;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     ctx.save();
-    ctx.translate(window.innerWidth / 2 - myPos.x, window.innerHeight / 2 - myPos.y);
+    ctx.translate(canvas.width / 2 - myPos.x, canvas.height / 2 - myPos.y);
 
     ctx.strokeStyle = "#333";
     ctx.lineWidth = 1;
@@ -122,7 +117,7 @@ function render() {
     ctx.lineWidth = 4;
     ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
 
-    ctx.fillStyle = "yellow";
+    ctx.fillStyle = "#ff0";
     bullets.forEach(b => {
         ctx.beginPath();
         ctx.arc(b.x, b.y, 5, 0, Math.PI * 2);
@@ -132,16 +127,13 @@ function render() {
     for (let id in players) {
         const p = players[id];
         const isMe = (id === socket.id);
-        const x = isMe ? myPos.x : p.x;
-        const y = isMe ? myPos.y : p.y;
-        const angle = isMe ? myPos.angle : (p.angle || 0);
+        
+        const renderX = isMe ? myPos.x : p.x;
+        const renderY = isMe ? myPos.y : p.y;
+        const renderA = isMe ? myPos.angle : (p.angle || 0);
+        const color = isMe ? "#00ff00" : "#ff4444";
 
-        renderPlayer(x, y, angle, 'rgb(30, 30, 30)');
-
-        ctx.fillStyle = "white";
-        ctx.font = "13px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText(p.name || "Guest", x, y - 45);
+        renderPlayer(renderX, renderY, renderA, color, p.name || "Guest");
     }
 
     ctx.restore();
