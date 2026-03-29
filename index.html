@@ -35,11 +35,11 @@ button:hover { background: #0072d1; }
 }
 #leaderboard {
     position: fixed; top: 20px; right: 20px; background: rgba(0, 0, 0, 0.5); 
-    padding: 15px; border-radius: 5px; border: 1px solid rgba(255, 255, 255, 0);
+    padding: 15px; border-radius: 5px; border: 1px solid rgba(255, 255, 255, 0.1);
     min-width: 150px; pointer-events: none; z-index: 5;
 }
 .lb-item { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px; }
-.lb-name { margin-right: 15px; }
+.lb-name { margin-right: 15px; font-weight: bold; }
 </style>
 </head>
 <body>
@@ -135,8 +135,9 @@ setInterval(() => {
 
 function updateLeaderboard() {
     let sorted = Object.values(players).sort((a, b) => b.score - a.score).slice(0, 5);
+    let html = "<div style='font-size:10px; color:#888; margin-bottom:5px;'>LEADERBOARD</div>";
     sorted.forEach(p => {
-        html += `<div class="lb-item" style='padding-bottom=15px'><span class="lb-name">${p.name || "Guest"}</span><span>${p.score}</span></div>`;
+        html += `<div class="lb-item"><span class="lb-name">${p.name || "Guest"}</span><span>${p.score}</span></div>`;
     });
     lbElement.innerHTML = html;
 }
@@ -159,6 +160,13 @@ function drawPlayer(x, y, angle, color, name) {
     ctx.fill();
     ctx.stroke();
 
+    ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+    ctx.beginPath();
+    ctx.moveTo(12, 0); 
+    ctx.lineTo(-12, 11); 
+    ctx.lineTo(-12, -11);
+    ctx.closePath();
+    ctx.fill();
 
     ctx.restore();
 
