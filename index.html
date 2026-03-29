@@ -21,7 +21,6 @@ button {
     padding: 12px 40px; font-size: 18px; background: #008cff; color: white;
     border: none; border-radius: 5px; cursor: pointer; font-weight: bold;
 }
-#status { margin-top: 15px; font-size: 12px; color: #888; }
 #leaderboard {
     position: fixed; top: 20px; right: 20px; background: rgba(0, 0, 0, 0.4); 
     padding: 12px; border-radius: 5px; min-width: 140px; pointer-events: none; z-index: 5;
@@ -34,7 +33,6 @@ button {
         <input type="text" id="nickInput" placeholder="Nickname" maxlength="10">
         <br>
         <button id="playBtn">Join game</button>
-        <div id="status">Connecting...</div>
     </div>
 </div>
 <div id="leaderboard"></div>
@@ -44,24 +42,21 @@ button {
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const ui = document.getElementById('ui-overlay');
-const statusText = document.getElementById('status');
 const nickInput = document.getElementById('nickInput');
 const lbElement = document.getElementById('leaderboard');
 const socket = io(window.location.hostname === "localhost" ? 'http://localhost:3000' : 'https://sporld-server.onrender.com');
 
 let gameStarted = false;
 let players = {};
-let bullets = {};
+let bullets = []; 
 let myPos = { x: 1000, y: 1000, angle: 0, name: "" };
 let mousePos = { x: 0, y: 0 };
 const keys = {};
 const MAP_SIZE = 2000;
 
-socket.on('connect', () => { statusText.innerText = "Connected"; statusText.style.color = "#00ff00"; });
-
 socket.on('update', data => { 
     players = data.players || {}; 
-    bullets = data.bullets || {};
+    bullets = data.bullets || [];
     updateLeaderboard();
 });
 
@@ -78,7 +73,6 @@ window.onmousemove = e => { mousePos.x = e.clientX; mousePos.y = e.clientY; };
 
 window.addEventListener('mousedown', (e) => {
     if (!gameStarted) return;
-    e.preventDefault();
     socket.emit('fire', { x: myPos.x, y: myPos.y, angle: myPos.angle });
 });
 
@@ -136,20 +130,16 @@ function render() {
     ctx.translate(window.innerWidth / 2 - myPos.x, window.innerHeight / 2 - myPos.y);
 
     ctx.strokeStyle = "#333";
-    ctx.lineWidth = 1;
     for (let i = 0; i <= MAP_SIZE; i += 100) {
         ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, MAP_SIZE); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(MAP_SIZE, i); ctx.stroke();
     }
 
-    Object.values(bullets).forEach(b => {
-        ctx.fillStyle = "#ff4444";
-        ctx.strokeStyle = "white";
-        ctx.lineWidth = 2;
+    bullets.forEach(b => {
+        ctx.fillStyle = "#00ff00"; // Neon Green
         ctx.beginPath(); 
-        ctx.arc(b.x, b.y, 6, 0, Math.PI * 2); 
+        ctx.arc(b.x, b.y, 7, 0, Math.PI * 2); 
         ctx.fill();
-        ctx.stroke();
     });
 
     Object.keys(players).forEach(id => {
@@ -160,10 +150,4 @@ function render() {
     });
 
     drawPlayer(myPos.x, myPos.y, myPos.angle, myPos.name, "#008cff");
-    ctx.restore();
-    requestAnimationFrame(render);
-}
-render();
-</script>
-</body>
-</html>
+    ctx.restore
