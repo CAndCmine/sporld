@@ -151,10 +151,9 @@ function render() {
     ctx.lineWidth = 2;
     ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
     for (let id in players) {
-        if (id !== socket.id) {
-            const p = players[id];
-            drawPlayer(p.x, p.y, p.angle, "#ff4444", p.name);
-        }
+        const p = players[id];
+        const color = (id === socket.id) ? "#008cff" : "#ff4444";
+        drawPlayer(p.x, p.y, p.angle, color, p.name);
     }
     drawPlayer(myPos.x, myPos.y, myPos.angle, "#008cff", nickInput.value || "Guest");
     ctx.restore();
