@@ -38,7 +38,7 @@ button:hover { background: #0072d1; }
     padding: 15px; border-radius: 5px; border: 1px solid rgba(255, 255, 255, 0);
     min-width: 150px; pointer-events: none; z-index: 5;
 }
-.lb-item { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px; }
+.lb-item { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px; }
 .lb-name { font-weight: bold; margin-right: 15px; }
 </style>
 </head>
@@ -146,20 +146,27 @@ function drawPlayer(x, y, angle, color, name) {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle);
+
     ctx.fillStyle = color;
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 6;
     ctx.lineJoin = "round";
+    
     ctx.beginPath();
-    ctx.moveTo(22.5, 0); ctx.lineTo(-22.5, 20); ctx.lineTo(-22.5, -20);
+    ctx.moveTo(25, 0); 
+    ctx.lineTo(-20, 22); 
+    ctx.lineTo(-20, -22);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = "white";
-    ctx.lineWidth = 5;
     ctx.stroke();
+
+
     ctx.restore();
+
     ctx.fillStyle = "white";
     ctx.font = "bold 14px Arial";
     ctx.textAlign = "center";
-    ctx.fillText(name, x, y - 40);
+    ctx.fillText(name, x, y - 45);
 }
 
 function render() {
