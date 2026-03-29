@@ -4,7 +4,7 @@
     <title>Sporld IO</title>
     <style>
         body { margin: 0; background: #1a1a1a; overflow: hidden; font-family: sans-serif; }
-        canvas { display: block; width: 100vw; height: 100vh; image-rendering: -webkit-optimize-contrast; }
+        canvas { display: block; width: 100vw; height: 100vh; image-rendering: pixelated; }
     </style>
 </head>
 <body>
@@ -51,12 +51,13 @@
             myPos.x = Math.max(0, Math.min(MAP_SIZE, myPos.x));
             myPos.y = Math.max(0, Math.min(MAP_SIZE, myPos.y));
             
+            // Critical: Calculate angle relative to center of screen
             myPos.angle = Math.atan2(mousePos.y - window.innerHeight/2, mousePos.x - window.innerWidth/2);
             
             socket.emit('move', { 
-                x: Math.round(myPos.x), 
-                y: Math.round(myPos.y), 
-                angle: Number(myPos.angle.toFixed(3)) 
+                x: myPos.x, 
+                y: myPos.y, 
+                angle: myPos.angle 
             });
         }, 16);
 
@@ -70,6 +71,7 @@
             ctx.save();
             ctx.translate(window.innerWidth / 2 - myPos.x, window.innerHeight / 2 - myPos.y);
 
+            // Grid
             ctx.strokeStyle = "#333";
             ctx.lineWidth = 1;
             for (let i = 0; i <= MAP_SIZE; i += 100) {
@@ -81,17 +83,20 @@
             ctx.lineWidth = 4;
             ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
 
-            Object.keys(players).forEach(id => {
+            for (let id in players) {
                 const p = players[id];
+                if (!p) continue;
+
                 const isMe = (id === socket.id);
                 
-                const drawX = isMe ? myPos.x : p.x;
-                const drawY = isMe ? myPos.y : p.y;
-                const drawAngle = isMe ? myPos.angle : (p.angle || 0);
+                // Use local values for self, server values for others
+                const x = isMe ? myPos.x : p.x;
+                const y = isMe ? myPos.y : p.y;
+                const angle = isMe ? myPos.angle : (p.angle || 0);
 
                 ctx.save();
-                ctx.translate(drawX, drawY);
-                ctx.rotate(drawAngle);
+                ctx.translate(x, y);
+                ctx.rotate(angle);
                 
                 ctx.fillStyle = isMe ? '#4CAF50' : '#e74c3c';
                 ctx.beginPath();
@@ -105,8 +110,8 @@
                 ctx.fillStyle = "white";
                 ctx.font = "bold 16px Arial";
                 ctx.textAlign = "center";
-                ctx.fillText(p.name || "Guest", drawX, drawY - 35);
-            });
+                ctx.fillText(p.name || "Guest", x, y - 35);
+            }
             ctx.restore();
 
             requestAnimationFrame(render);
