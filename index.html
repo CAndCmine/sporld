@@ -23,7 +23,7 @@ socket.emit('join', myName);
 
 let players = {};
 let myPos = { x: 1000, y: 1000, angle: 0 };
-let mousePos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+let mousePos = { x: 0, y: 0 };
 const keys = {};
 
 const SPEED = 5;
@@ -117,17 +117,19 @@ function render() {
         const p = players[id];
         if (!p) continue;
 
-        const isMe = (id === socket.id);
-        const x = isMe ? myPos.x : (typeof p.x === 'number' ? p.x : 0);
-        const y = isMe ? myPos.y : (typeof p.y === 'number' ? p.y : 0);
-        const angle = isMe ? myPos.angle : (typeof p.angle === 'number' ? p.angle : 0);
-
-        renderPlayer(x, y, angle, 'rgb(30, 30, 30)');
-
-        ctx.fillStyle = "white";
-        ctx.font = "13px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText(p.name || "Guest", x, y - 45);
+        if (id === socket.id) {
+            renderPlayer(myPos.x, myPos.y, myPos.angle, 'rgb(30, 30, 30)');
+            ctx.fillStyle = "white";
+            ctx.font = "13px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText(myName, myPos.x, myPos.y - 45);
+        } else {
+            renderPlayer(p.x, p.y, p.angle, 'rgb(30, 30, 30)');
+            ctx.fillStyle = "white";
+            ctx.font = "13px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText(p.name, p.x, p.y - 45);
+        }
     }
 
     ctx.restore();
