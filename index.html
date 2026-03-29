@@ -34,11 +34,25 @@ button:hover { background: #0072d1; }
     opacity: 0.5;
 }
 #leaderboard {
-    position: fixed; top: 20px; right: 20px; background: rgba(0, 0, 0, 0.4); 
-    padding: 10px 15px; border-radius: 5px; border: 1px solid rgba(255, 255, 255, 0.1);
-    min-width: 140px; pointer-events: none; z-index: 5;
+    position: fixed; 
+    top: 20px; 
+    right: 20px; 
+    background: rgba(0, 0, 0, 0.4); 
+    padding: 12px 15px 18px 15px;
+    border-radius: 5px; 
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    min-width: 140px; 
+    pointer-events: none; 
+    z-index: 5;
 }
-.lb-item { display: flex; justify-content: space-between; font-size: 14px; padding: 2px 0; font-weight: normal; }
+
+.lb-item { 
+    display: flex; 
+    justify-content: space-between; 
+    font-size: 14px; 
+    padding: 4px 0; /* Increased vertical padding between players */
+    font-weight: normal; 
+}
 .lb-name { margin-right: 20px; color: rgba(255,255,255,0.9); }
 .lb-score { color: rgba(255,255,255,0.6); }
 </style>
