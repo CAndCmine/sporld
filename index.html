@@ -19,7 +19,7 @@ const socket = io('https://sporld-server.onrender.com', {
     upgrade: false
 });
 
-let myName = prompt("What's your nickname:") || "Guest";
+let myName = prompt("Nickname:") || "Guest";
 socket.emit('join', myName);
 
 let players = {};
@@ -122,12 +122,12 @@ function render() {
         const p = players[id];
         if (!p) continue;
 
-        let angle = typeof p.angle === 'number' ? p.angle : 0;
-
-        renderPlayer(p.x, p.y, angle,
-            id === socket.id ? 'rgb(50, 50, 50)' : 'rgb(30, 30, 30)',
-            p.name || "Guest"
-        );
+        if (id === socket.id) {
+            renderPlayer(myPos.x, myPos.y, myPos.angle, 'rgb(50, 50, 50)', myName);
+        } else {
+            let angle = typeof p.angle === 'number' ? p.angle : 0;
+            renderPlayer(p.x, p.y, angle, 'rgb(30, 30, 30)', p.name || "Guest");
+        }
     }
 
     ctx.restore();
