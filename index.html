@@ -3,56 +3,52 @@
 <head>
 <title>Sporld IO</title>
 <style>
-    body { margin: 0; background: #1a1a1a; overflow: hidden; font-family: sans-serif; color: white; touch-action: none; }
-    canvas { display: block; width: 100vw; height: 100vh; }
-    
-    #ui-overlay {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0); display: flex; align-items: center; justify-content: center; z-index: 10;
-    }
-    .menu {
-        background: #222; padding: 40px; border-radius: 15px; text-align: center;
-        border: 2px solid #444; box-shadow: 0 0 30px rgba(0,0,0,0.5);
-    }
-    input {
-        padding: 12px; font-size: 18px; border-radius: 5px; border: 2px solid #555;
-        background: #111; color: white; width: 200px; margin-bottom: 20px; outline: none;
-    }
-    button {
-        padding: 12px 40px; font-size: 18px; background: #008cff; color: white;
-        border: none; border-radius: 5px; cursor: pointer; font-weight: bold;
-    }
-    
-    /* Mobile Joystick Styles */
-    #joystick-container {
-        position: fixed; bottom: 50px; left: 50px; width: 120px; height: 120px;
-        background: rgba(255, 255, 255, 0.1); border-radius: 50%;
-        display: none; touch-action: none; z-index: 5; border: 2px solid rgba(255,255,255,0.2);
-    }
-    #joystick-knob {
-        position: absolute; top: 50%; left: 50%; width: 50px; height: 50px;
-        background: white; border-radius: 50%; transform: translate(-50%, -50%);
-        opacity: 0.5;
-    }
+body { margin: 0; background: #1a1a1a; overflow: hidden; font-family: sans-serif; color: white; touch-action: none; }
+canvas { display: block; width: 100vw; height: 100vh; }
+#ui-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0); display: flex; align-items: center; justify-content: center; z-index: 10;
+}
+.menu {
+    background: #222; padding: 40px; border-radius: 15px; text-align: center;
+    border: 2px solid #444; box-shadow: 0 0 30px rgba(0,0,0,0.5);
+}
+input:not([type="checkbox"]) {
+    padding: 12px; font-size: 18px; border-radius: 5px; border: 2px solid #555;
+    background: #111; color: white; width: 200px; margin-bottom: 20px; outline: none;
+}
+button {
+    padding: 12px 40px; font-size: 18px; background: #008cff; color: white;
+    border: none; border-radius: 5px; cursor: pointer; font-weight: bold;
+}
+button:hover { background: #0072d1; }
+#status { margin-top: 15px; font-size: 12px; color: #888; }
+#joystick-container {
+    position: fixed; bottom: 50px; left: 50px; width: 120px; height: 120px;
+    background: rgba(255, 255, 255, 0.1); border-radius: 50%;
+    display: none; touch-action: none; z-index: 5; border: 2px solid rgba(255,255,255,0.2);
+}
+#joystick-knob {
+    position: absolute; top: 50%; left: 50%; width: 50px; height: 50px;
+    background: white; border-radius: 50%; transform: translate(-50%, -50%);
+    opacity: 0.5;
+}
 </style>
 </head>
 <body>
-
 <div id="ui-overlay">
     <div class="menu">
         <input type="text" id="nickInput" placeholder="Nickname" maxlength="10">
-        <br>
+        <div style="margin-bottom: 20px; font-size: 14px; color: #bbb;">
+            <input type="checkbox" id="joyCheck" style="width: auto; margin: 0; vertical-align: middle;">
+            <label for="joyCheck" style="margin-left: 8px;">Enable Mobile Joystick</label>
+        </div>
         <button id="playBtn">PLAY</button>
         <div id="status">Connecting...</div>
     </div>
 </div>
-
-<div id="joystick-container">
-    <div id="joystick-knob"></div>
-</div>
-
+<div id="joystick-container"><div id="joystick-knob"></div></div>
 <canvas id="canvas"></canvas>
-
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script>
 const canvas = document.getElementById('canvas');
@@ -60,101 +56,64 @@ const ctx = canvas.getContext('2d');
 const ui = document.getElementById('ui-overlay');
 const statusText = document.getElementById('status');
 const nickInput = document.getElementById('nickInput');
+const joyCheck = document.getElementById('joyCheck');
 const joyContainer = document.getElementById('joystick-container');
 const joyKnob = document.getElementById('joystick-knob');
-
-const SERVER_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
-    ? 'http://localhost:3000' 
-    : 'https://sporld-server.onrender.com';
-
+const SERVER_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" ? 'http://localhost:3000' : 'https://sporld-server.onrender.com';
 const socket = io(SERVER_URL);
-
 let gameStarted = false;
 let players = {};
 let myPos = { x: 1000, y: 1000, angle: 0 };
 let mousePos = { x: 0, y: 0 };
 const keys = {};
 const MAP_SIZE = 2000;
-
-
 let joystickActive = false;
 let joystickData = { x: 0, y: 0 };
-
-socket.on('connect', () => { statusText.innerText = "Connected"; });
+if ('ontouchstart' in window) joyCheck.checked = true;
+socket.on('connect', () => { statusText.innerText = "Connected"; statusText.style.color = "white"; });
 socket.on('update', data => { players = data; });
-
 document.getElementById('playBtn').onclick = () => {
-    const name = nickInput.value || "Guest";
-    socket.emit('join', name);
+    socket.emit('join', nickInput.value || "Guest");
     ui.style.display = 'none';
     gameStarted = true;
-    if ('ontouchstart' in window) joyContainer.style.display = 'block';
+    if (joyCheck.checked) joyContainer.style.display = 'block';
 };
-
-
 window.onkeydown = e => keys[e.key.toLowerCase()] = true;
 window.onkeyup = e => keys[e.key.toLowerCase()] = false;
-window.onmousemove = e => { 
-    mousePos.x = e.clientX; 
-    mousePos.y = e.clientY; 
-};
-
+window.onmousemove = e => { mousePos.x = e.clientX; mousePos.y = e.clientY; };
 joyContainer.ontouchstart = () => { joystickActive = true; };
-window.ontouchend = () => {
-    joystickActive = false;
-    joystickData = { x: 0, y: 0 };
-    joyKnob.style.transform = `translate(-50%, -50%)`;
-};
+window.ontouchend = () => { joystickActive = false; joystickData = { x: 0, y: 0 }; joyKnob.style.transform = `translate(-50%, -50%)`; };
 window.ontouchmove = e => {
     if (!joystickActive) return;
     const touch = e.touches[0];
     const rect = joyContainer.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
-    
     let dx = touch.clientX - centerX;
     let dy = touch.clientY - centerY;
     const dist = Math.sqrt(dx*dx + dy*dy);
     const maxDist = rect.width / 2;
-
-    if (dist > maxDist) {
-        dx *= maxDist / dist;
-        dy *= maxDist / dist;
-    }
-
+    if (dist > maxDist) { dx *= maxDist / dist; dy *= maxDist / dist; }
     joystickData = { x: dx / maxDist, y: dy / maxDist };
     joyKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
 };
-
 setInterval(() => {
     if (!gameStarted) return;
-
-    let moveX = 0;
-    let moveY = 0;
-
+    let moveX = 0, moveY = 0;
     if (keys.w || keys.arrowup) moveY -= 5;
     if (keys.s || keys.arrowdown) moveY += 5;
     if (keys.a || keys.arrowleft) moveX -= 5;
     if (keys.d || keys.arrowright) moveX += 5;
-
     if (joystickActive) {
-        moveX = joystickData.x * 5;
-        moveY = joystickData.y * 5;
-
+        moveX = joystickData.x * 5; moveY = joystickData.y * 5;
         myPos.angle = Math.atan2(moveY, moveX);
     } else {
-
-        let centerX = window.innerWidth / 2;
-        let centerY = window.innerHeight / 2;
-        myPos.angle = Math.atan2(mousePos.y - centerY, mousePos.x - centerX);
+        myPos.angle = Math.atan2(mousePos.y - window.innerHeight / 2, mousePos.x - window.innerWidth / 2);
     }
-
     myPos.x = Math.max(0, Math.min(MAP_SIZE, myPos.x + moveX));
     myPos.y = Math.max(0, Math.min(MAP_SIZE, myPos.y + moveY));
-
     socket.emit('move', { x: myPos.x, y: myPos.y, angle: myPos.angle });
 }, 16);
-
 function drawPlayer(x, y, angle, color, name) {
     ctx.save();
     ctx.translate(x, y);
@@ -162,51 +121,42 @@ function drawPlayer(x, y, angle, color, name) {
     ctx.fillStyle = color;
     ctx.lineJoin = "round";
     ctx.beginPath();
-    ctx.moveTo(22.5, 0); 
-    ctx.lineTo(-22.5, 20); 
-    ctx.lineTo(-22.5, -20);
+    ctx.moveTo(22.5, 0); ctx.lineTo(-22.5, 20); ctx.lineTo(-22.5, -20);
     ctx.closePath();
     ctx.fill();
     ctx.strokeStyle = "white";
     ctx.lineWidth = 5;
     ctx.stroke();
     ctx.restore();
-
     ctx.fillStyle = "white";
     ctx.font = "bold 14px Arial";
     ctx.textAlign = "center";
     ctx.fillText(name, x, y - 40);
 }
-
 function render() {
     const dpr = window.devicePixelRatio || 1;
     canvas.width = window.innerWidth * dpr;
     canvas.height = window.innerHeight * dpr;
     ctx.scale(dpr, dpr);
-    
     ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
     ctx.save();
     ctx.translate(window.innerWidth / 2 - myPos.x, window.innerHeight / 2 - myPos.y);
-
     ctx.strokeStyle = "#333";
     ctx.lineWidth = 1;
     for (let i = 0; i <= MAP_SIZE; i += 100) {
         ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, MAP_SIZE); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(MAP_SIZE, i); ctx.stroke();
     }
-
     ctx.strokeStyle = "white";
     ctx.lineWidth = 2;
     ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
-
     for (let id in players) {
         if (id !== socket.id) {
             const p = players[id];
-            drawPlayer(p.x, p.y, p.angle, "#ff4444", p.name || "Guest");
+            drawPlayer(p.x, p.y, p.angle, "#ff4444", p.name);
         }
     }
     drawPlayer(myPos.x, myPos.y, myPos.angle, "#008cff", nickInput.value || "Guest");
-
     ctx.restore();
     requestAnimationFrame(render);
 }
