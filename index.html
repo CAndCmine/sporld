@@ -27,9 +27,8 @@ const keys = {};
 const SPEED = 5;
 const MAP_SIZE = 2000;
 
-/* PLAYER SHAPE SETTINGS (CHANGE HERE) */
-const PLAYER_LENGTH = 18;
-const PLAYER_WIDTH = 10;
+const PLAYER_LENGTH = 30;
+const PLAYER_WIDTH = 28;
 
 function resize() {
     const dpr = window.devicePixelRatio || 1;
@@ -82,7 +81,6 @@ function renderPlayer(x, y, angle, color) {
 
     ctx.beginPath();
 
-    /* PLAYER SHAPE (EDIT THIS IF YOU WANT A DIFFERENT DESIGN) */
     ctx.moveTo(PLAYER_LENGTH, 0);
     ctx.lineTo(-PLAYER_WIDTH, PLAYER_WIDTH);
     ctx.lineTo(-PLAYER_WIDTH, -PLAYER_WIDTH);
