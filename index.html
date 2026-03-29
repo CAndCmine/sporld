@@ -69,18 +69,23 @@ const keys = {};
 const MAP_SIZE = 2000;
 let joystickActive = false;
 let joystickData = { x: 0, y: 0 };
+
 if ('ontouchstart' in window) joyCheck.checked = true;
+
 socket.on('connect', () => { statusText.innerText = "Connected"; statusText.style.color = "white"; });
 socket.on('update', data => { players = data; });
+
 document.getElementById('playBtn').onclick = () => {
     socket.emit('join', nickInput.value || "Guest");
     ui.style.display = 'none';
     gameStarted = true;
     if (joyCheck.checked) joyContainer.style.display = 'block';
 };
+
 window.onkeydown = e => keys[e.key.toLowerCase()] = true;
 window.onkeyup = e => keys[e.key.toLowerCase()] = false;
 window.onmousemove = e => { mousePos.x = e.clientX; mousePos.y = e.clientY; };
+
 joyContainer.ontouchstart = () => { joystickActive = true; };
 window.ontouchend = () => { joystickActive = false; joystickData = { x: 0, y: 0 }; joyKnob.style.transform = `translate(-50%, -50%)`; };
 window.ontouchmove = e => {
@@ -97,6 +102,7 @@ window.ontouchmove = e => {
     joystickData = { x: dx / maxDist, y: dy / maxDist };
     joyKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
 };
+
 setInterval(() => {
     if (!gameStarted) return;
     let moveX = 0, moveY = 0;
@@ -114,6 +120,7 @@ setInterval(() => {
     myPos.y = Math.max(0, Math.min(MAP_SIZE, myPos.y + moveY));
     socket.emit('move', { x: myPos.x, y: myPos.y, angle: myPos.angle });
 }, 16);
+
 function drawPlayer(x, y, angle, color, name) {
     ctx.save();
     ctx.translate(x, y);
@@ -133,29 +140,48 @@ function drawPlayer(x, y, angle, color, name) {
     ctx.textAlign = "center";
     ctx.fillText(name, x, y - 40);
 }
+
 function render() {
     const dpr = window.devicePixelRatio || 1;
     canvas.width = window.innerWidth * dpr;
     canvas.height = window.innerHeight * dpr;
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
     ctx.save();
     ctx.translate(window.innerWidth / 2 - myPos.x, window.innerHeight / 2 - myPos.y);
+
     ctx.strokeStyle = "#333";
     ctx.lineWidth = 1;
     for (let i = 0; i <= MAP_SIZE; i += 100) {
         ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, MAP_SIZE); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(MAP_SIZE, i); ctx.stroke();
     }
+
     ctx.strokeStyle = "white";
     ctx.lineWidth = 2;
     ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
+
+    let foundMyself = false;
+
     for (let id in players) {
         const p = players[id];
-        const color = (id === socket.id) ? "#008cff" : "#ff4444";
-        drawPlayer(p.x, p.y, p.angle, color, p.name);
+        const playerColor = (id === socket.id) ? "#008cff" : "#ff4444";
+        const playerName = p.name || "Guest";
+
+        if (id === socket.id) {
+            foundMyself = true;
+            drawPlayer(myPos.x, myPos.y, myPos.angle, playerColor, playerName);
+        } else {
+            drawPlayer(p.x, p.y, p.angle, playerColor, playerName);
+        }
     }
-    drawPlayer(myPos.x, myPos.y, myPos.angle, "#008cff", nickInput.value || "Guest");
+
+  
+    if (!foundMyself) {
+        drawPlayer(myPos.x, myPos.y, myPos.angle, "#008cff", nickInput.value || "Guest");
+    }
+
     ctx.restore();
     requestAnimationFrame(render);
 }
