@@ -11,7 +11,7 @@ canvas { display: block; width: 100vw; height: 100vh; }
 }
 .menu {
     background: #222; padding: 40px; border-radius: 15px; text-align: center;
-    border: 2px solid #444; box-shadow: 0 0 30px rgba(0,0,0,0.5);
+    border: 2px solid #444;
 }
 input {
     padding: 12px; font-size: 18px; border-radius: 5px; border: 2px solid #555;
@@ -19,9 +19,8 @@ input {
 }
 button {
     padding: 12px 40px; font-size: 18px; background: #008cff; color: white;
-    border: none; border-radius: 5px; cursor: pointer; font-weight: bold; position: relative; z-index: 101;
+    border: none; border-radius: 5px; cursor: pointer; font-weight: bold;
 }
-button:hover { background: #0072d1; }
 #leaderboard {
     position: fixed; top: 20px; right: 20px; background: rgba(0, 0, 0, 0.4); 
     padding: 12px; border-radius: 5px; min-width: 140px; pointer-events: none; z-index: 5;
@@ -61,8 +60,7 @@ socket.on('update', data => {
     updateLeaderboard();
 });
 
-document.getElementById('playBtn').onclick = (e) => {
-    e.stopPropagation();
+document.getElementById('playBtn').onclick = () => {
     myPos.name = nickInput.value.trim() || "Guest";
     socket.emit('join', myPos.name);
     ui.style.display = 'none';
@@ -73,7 +71,7 @@ window.onkeydown = e => keys[e.key.toLowerCase()] = true;
 window.onkeyup = e => keys[e.key.toLowerCase()] = false;
 window.onmousemove = e => { mousePos.x = e.clientX; mousePos.y = e.clientY; };
 
-window.addEventListener('mousedown', (e) => {
+window.addEventListener('mousedown', () => {
     if (!gameStarted) return;
     socket.emit('fire', { x: myPos.x, y: myPos.y, angle: myPos.angle });
 });
@@ -104,4 +102,58 @@ function drawPlayer(x, y, angle, name, color) {
     ctx.rotate(angle);
     ctx.fillStyle = color;
     ctx.strokeStyle = "white";
-    ctx.
+    ctx.lineWidth = 6;
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    ctx.moveTo(25, 0); 
+    ctx.lineTo(-20, 22); 
+    ctx.lineTo(-20, -22);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle = "white";
+    ctx.textAlign = "center";
+    ctx.font = "bold 14px sans-serif";
+    ctx.fillText(name, x, y - 45);
+}
+
+function render() {
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = window.innerWidth * dpr;
+    canvas.height = window.innerHeight * dpr;
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    if (!gameStarted) { requestAnimationFrame(render); return; }
+
+    ctx.save();
+    ctx.translate(window.innerWidth / 2 - myPos.x, window.innerHeight / 2 - myPos.y);
+
+    ctx.strokeStyle = "#333";
+    for (let i = 0; i <= MAP_SIZE; i += 100) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, MAP_SIZE); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(MAP_SIZE, i); ctx.stroke();
+    }
+
+    ctx.fillStyle = "#ff0000"; 
+    for(let b of bullets) {
+        ctx.beginPath(); 
+        ctx.arc(b.x, b.y, 8, 0, Math.PI * 2); 
+        ctx.fill();
+    }
+
+    Object.keys(players).forEach(id => {
+        if (id !== socket.id) {
+            const p = players[id];
+            drawPlayer(p.x, p.y, p.angle, p.name || "Guest", "rgba(255,255,255,0.8)");
+        }
+    });
+
+    drawPlayer(myPos.x, myPos.y, myPos.angle, myPos.name, "#008cff");
+    ctx.restore();
+    requestAnimationFrame(render);
+}
+render();
+</script>
+</body>
+</html>
