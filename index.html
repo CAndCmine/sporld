@@ -113,9 +113,9 @@ function render() {
         ctx.restore();
 
         ctx.fillStyle = "white";
-        ctx.font = "bold 16px Arial";
+        ctx.font = "bold 13px Arial";
         ctx.textAlign = "center";
-        ctx.fillText(p.name || "Guest", x, y - 35);
+        ctx.fillText(p.name || myName, x, y - 35);
     }
 
     ctx.restore();
