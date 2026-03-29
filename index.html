@@ -3,7 +3,7 @@
 <head>
     <title>Sporld IO</title>
     <style>
-        body { margin: 0; background: #f5f5f5; overflow: hidden; font-family: sans-serif; }
+        body { margin: 0; background: #1a1a1a; overflow: hidden; font-family: sans-serif; }
         canvas { display: block; width: 100vw; height: 100vh; image-rendering: pixelated; }
     </style>
 </head>
@@ -26,6 +26,10 @@ const keys = {};
 
 const SPEED = 5;
 const MAP_SIZE = 2000;
+
+/* PLAYER SHAPE SETTINGS (CHANGE HERE) */
+const PLAYER_LENGTH = 18;
+const PLAYER_WIDTH = 10;
 
 function resize() {
     const dpr = window.devicePixelRatio || 1;
@@ -69,6 +73,26 @@ socket.on('update', data => {
     players = data;
 });
 
+function renderPlayer(x, y, angle, color) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+
+    ctx.fillStyle = color;
+
+    ctx.beginPath();
+
+    /* PLAYER SHAPE (EDIT THIS IF YOU WANT A DIFFERENT DESIGN) */
+    ctx.moveTo(PLAYER_LENGTH, 0);
+    ctx.lineTo(-PLAYER_WIDTH, PLAYER_WIDTH);
+    ctx.lineTo(-PLAYER_WIDTH, -PLAYER_WIDTH);
+    ctx.closePath();
+
+    ctx.fill();
+
+    ctx.restore();
+}
+
 function render() {
     const dpr = window.devicePixelRatio || 1;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -77,14 +101,14 @@ function render() {
     ctx.save();
     ctx.translate(window.innerWidth / 2 - myPos.x, window.innerHeight / 2 - myPos.y);
 
-    ctx.strokeStyle = "#ccc";
+    ctx.strokeStyle = "#333";
     ctx.lineWidth = 1;
     for (let i = 0; i <= MAP_SIZE; i += 100) {
         ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, MAP_SIZE); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(MAP_SIZE, i); ctx.stroke();
     }
 
-    ctx.strokeStyle = "#222";
+    ctx.strokeStyle = "white";
     ctx.lineWidth = 4;
     ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
 
@@ -98,24 +122,12 @@ function render() {
         const y = isMe ? myPos.y : p.y;
         const angle = isMe ? myPos.angle : (typeof p.angle === "number" ? p.angle : 0);
 
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.rotate(angle);
+        renderPlayer(x, y, angle, isMe ? '#4CAF50' : '#e74c3c');
 
-        ctx.fillStyle = isMe ? '#2ecc71' : '#e74c3c';
-        ctx.beginPath();
-        ctx.moveTo(25, 0);
-        ctx.lineTo(-15, 15);
-        ctx.lineTo(-15, -15);
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.restore();
-
-        ctx.fillStyle = "#222";
+        ctx.fillStyle = "white";
         ctx.font = "bold 13px Arial";
         ctx.textAlign = "center";
-        ctx.fillText(p.name || myName, x, y - 35);
+        ctx.fillText(p.name || myName, x, y - 30);
     }
 
     ctx.restore();
