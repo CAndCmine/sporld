@@ -82,10 +82,11 @@ function renderPlayer(x, y, angle, color) {
     ctx.beginPath();
 
     ctx.moveTo(PLAYER_LENGTH, 0);
-    ctx.lineTo(-PLAYER_WIDTH, PLAYER_WIDTH);
-    ctx.lineTo(-PLAYER_WIDTH, -PLAYER_WIDTH);
-    ctx.closePath();
+    ctx.quadraticCurveTo(0, PLAYER_WIDTH, -PLAYER_WIDTH, PLAYER_WIDTH);
+    ctx.quadraticCurveTo(-PLAYER_WIDTH - 5, 0, -PLAYER_WIDTH, -PLAYER_WIDTH);
+    ctx.quadraticCurveTo(0, -PLAYER_WIDTH, PLAYER_LENGTH, 0);
 
+    ctx.closePath();
     ctx.fill();
 
     ctx.restore();
