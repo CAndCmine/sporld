@@ -211,7 +211,7 @@ function render() {
         }
     }
     if (!foundMyself && gameStarted) {
-        drawPlayer(myPos.x, myPos.y, myPos.angle, "#008cff", myPos.name || "Guest");
+        drawPlayer(myPos.x, myPos.y, myPos.angle, "rgb(255, 255, 255)", myPos.name || "Guest");
     }
     ctx.restore();
     requestAnimationFrame(render);
