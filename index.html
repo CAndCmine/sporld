@@ -73,8 +73,8 @@ setInterval(() => {
 }, 16);
 
 socket.on('update', data => {
-    players = data.players;
-    bullets = data.bullets;
+    players = data.players || {};
+    bullets = data.bullets || [];
 });
 
 function renderPlayer(x, y, angle, color) {
@@ -122,8 +122,8 @@ function render() {
     ctx.lineWidth = 4;
     ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
 
+    ctx.fillStyle = "yellow";
     bullets.forEach(b => {
-        ctx.fillStyle = "yellow";
         ctx.beginPath();
         ctx.arc(b.x, b.y, 5, 0, Math.PI * 2);
         ctx.fill();
@@ -131,19 +131,17 @@ function render() {
 
     for (let id in players) {
         const p = players[id];
-        if (!p) continue;
-
         const isMe = (id === socket.id);
         const x = isMe ? myPos.x : p.x;
         const y = isMe ? myPos.y : p.y;
-        const angle = isMe ? myPos.angle : (typeof p.angle === "number" ? p.angle : 0);
+        const angle = isMe ? myPos.angle : (p.angle || 0);
 
         renderPlayer(x, y, angle, 'rgb(30, 30, 30)');
 
         ctx.fillStyle = "white";
         ctx.font = "13px Arial";
         ctx.textAlign = "center";
-        ctx.fillText(p.name || myName, x, y - 45);
+        ctx.fillText(p.name || "Guest", x, y - 45);
     }
 
     ctx.restore();
