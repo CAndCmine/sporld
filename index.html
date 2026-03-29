@@ -33,6 +33,13 @@ button:hover { background: #0072d1; }
     background: white; border-radius: 50%; transform: translate(-50%, -50%);
     opacity: 0.5;
 }
+#leaderboard {
+    position: fixed; top: 20px; right: 20px; background: rgba(0, 0, 0, 0.5); 
+    padding: 15px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.2);
+    min-width: 150px; pointer-events: none; z-index: 5;
+}
+.lb-item { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px; }
+.lb-name { font-weight: bold; margin-right: 15px; }
 </style>
 </head>
 <body>
@@ -47,6 +54,7 @@ button:hover { background: #0072d1; }
         <div id="status">Connecting...</div>
     </div>
 </div>
+<div id="leaderboard"></div>
 <div id="joystick-container"><div id="joystick-knob"></div></div>
 <canvas id="canvas"></canvas>
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
@@ -59,6 +67,7 @@ const nickInput = document.getElementById('nickInput');
 const joyCheck = document.getElementById('joyCheck');
 const joyContainer = document.getElementById('joystick-container');
 const joyKnob = document.getElementById('joystick-knob');
+const lbElement = document.getElementById('leaderboard');
 const SERVER_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" ? 'http://localhost:3000' : 'https://sporld-server.onrender.com';
 const socket = io(SERVER_URL);
 let gameStarted = false;
@@ -73,7 +82,10 @@ let joystickData = { x: 0, y: 0 };
 if ('ontouchstart' in window) joyCheck.checked = true;
 
 socket.on('connect', () => { statusText.innerText = "Connected"; statusText.style.color = "white"; });
-socket.on('update', data => { players = data; });
+socket.on('update', data => { 
+    players = data; 
+    updateLeaderboard();
+});
 
 document.getElementById('playBtn').onclick = () => {
     socket.emit('join', nickInput.value || "Guest");
@@ -121,6 +133,15 @@ setInterval(() => {
     socket.emit('move', { x: myPos.x, y: myPos.y, angle: myPos.angle });
 }, 16);
 
+function updateLeaderboard() {
+    let sorted = Object.values(players).sort((a, b) => b.score - a.score).slice(0, 5);
+    let html = '<div style="font-size:10px; color:#888; margin-bottom:5px;">LEADERBOARD</div>';
+    sorted.forEach(p => {
+        html += `<div class="lb-item"><span class="lb-name">${p.name || "Guest"}</span><span>${p.score}</span></div>`;
+    });
+    lbElement.innerHTML = html;
+}
+
 function drawPlayer(x, y, angle, color, name) {
     ctx.save();
     ctx.translate(x, y);
@@ -147,28 +168,22 @@ function render() {
     canvas.height = window.innerHeight * dpr;
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-
     ctx.save();
     ctx.translate(window.innerWidth / 2 - myPos.x, window.innerHeight / 2 - myPos.y);
-
     ctx.strokeStyle = "#333";
     ctx.lineWidth = 1;
     for (let i = 0; i <= MAP_SIZE; i += 100) {
         ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, MAP_SIZE); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(MAP_SIZE, i); ctx.stroke();
     }
-
     ctx.strokeStyle = "white";
     ctx.lineWidth = 2;
     ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
-
     let foundMyself = false;
-
     for (let id in players) {
         const p = players[id];
         const playerColor = (id === socket.id) ? "#008cff" : "#ff4444";
         const playerName = p.name || "Guest";
-
         if (id === socket.id) {
             foundMyself = true;
             drawPlayer(myPos.x, myPos.y, myPos.angle, playerColor, playerName);
@@ -176,12 +191,9 @@ function render() {
             drawPlayer(p.x, p.y, p.angle, playerColor, playerName);
         }
     }
-
-  
-    if (!foundMyself) {
+    if (!foundMyself && gameStarted) {
         drawPlayer(myPos.x, myPos.y, myPos.angle, "#008cff", nickInput.value || "Guest");
     }
-
     ctx.restore();
     requestAnimationFrame(render);
 }
