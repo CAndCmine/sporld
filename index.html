@@ -201,7 +201,7 @@ function render() {
     let foundMyself = false;
     for (let id in players) {
         const p = players[id];
-        const playerColor = (id === socket.id) ? "#008cff" : "#ff4444";
+        const playerColor = (id === socket.id) ? "rgb(255, 255, 255)" : "rgb(255, 255, 255)";
         const playerName = p.name || "Guest";
         if (id === socket.id) {
             foundMyself = true;
