@@ -35,11 +35,11 @@ button:hover { background: #0072d1; }
 }
 #leaderboard {
     position: fixed; top: 20px; right: 20px; background: rgba(0, 0, 0, 0.5); 
-    padding: 15px; border-radius: 5px; border: 1px solid rgba(255, 255, 255, 0.1);
-    min-width: 150px; pointer-events: none; z-index: 5;
+    padding: 10px; border-radius: 5px; border: 1px solid rgba(255, 255, 255, 0.1);
+    min-width: 120px; pointer-events: none; z-index: 5;
 }
-.lb-item { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px; }
-.lb-name { margin-right: 15px; font-weight: bold; }
+.lb-item { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 3px; font-weight: normal; }
+.lb-name { margin-right: 15px; }
 </style>
 </head>
 <body>
@@ -72,7 +72,7 @@ const SERVER_URL = window.location.hostname === "localhost" || window.location.h
 const socket = io(SERVER_URL);
 let gameStarted = false;
 let players = {};
-let myPos = { x: 1000, y: 1000, angle: 0 };
+let myPos = { x: 1000, y: 1000, angle: 0, name: "" };
 let mousePos = { x: 0, y: 0 };
 const keys = {};
 const MAP_SIZE = 2000;
@@ -88,7 +88,9 @@ socket.on('update', data => {
 });
 
 document.getElementById('playBtn').onclick = () => {
-    socket.emit('join', nickInput.value || "Guest");
+    const name = nickInput.value.trim() || "Guest";
+    myPos.name = name;
+    socket.emit('join', name);
     ui.style.display = 'none';
     gameStarted = true;
     if (joyCheck.checked) joyContainer.style.display = 'block';
@@ -135,7 +137,7 @@ setInterval(() => {
 
 function updateLeaderboard() {
     let sorted = Object.values(players).sort((a, b) => b.score - a.score).slice(0, 5);
-    let html = "<div style='font-size:10px; color:#888; margin-bottom:5px;'>LEADERBOARD</div>";
+    let html = "";
     sorted.forEach(p => {
         html += `<div class="lb-item"><span class="lb-name">${p.name || "Guest"}</span><span>${p.score}</span></div>`;
     });
@@ -146,12 +148,10 @@ function drawPlayer(x, y, angle, color, name) {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle);
-
     ctx.fillStyle = color;
     ctx.strokeStyle = "white";
     ctx.lineWidth = 6;
     ctx.lineJoin = "round";
-    
     ctx.beginPath();
     ctx.moveTo(25, 0); 
     ctx.lineTo(-20, 22); 
@@ -159,7 +159,6 @@ function drawPlayer(x, y, angle, color, name) {
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
-
     ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
     ctx.beginPath();
     ctx.moveTo(12, 0); 
@@ -167,11 +166,9 @@ function drawPlayer(x, y, angle, color, name) {
     ctx.lineTo(-12, -11);
     ctx.closePath();
     ctx.fill();
-
     ctx.restore();
-
     ctx.fillStyle = "white";
-    ctx.font = "bold 14px Arial";
+    ctx.font = "14px Arial";
     ctx.textAlign = "center";
     ctx.fillText(name, x, y - 45);
 }
@@ -206,7 +203,7 @@ function render() {
         }
     }
     if (!foundMyself && gameStarted) {
-        drawPlayer(myPos.x, myPos.y, myPos.angle, "#008cff", nickInput.value || "Guest");
+        drawPlayer(myPos.x, myPos.y, myPos.angle, "#008cff", myPos.name || "Guest");
     }
     ctx.restore();
     requestAnimationFrame(render);
