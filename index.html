@@ -4,7 +4,7 @@
     <title>Sporld IO</title>
     <style>
         body { margin: 0; background: #1a1a1a; overflow: hidden; font-family: sans-serif; }
-        canvas { display: block; width: 100vw; height: 100vh; image-rendering: pixelated; }
+        canvas { display: block; width: 100vw; height: 100vh; }
     </style>
 </head>
 <body>
@@ -20,7 +20,11 @@ const socket = io('https://sporld-server.onrender.com', {
     upgrade: false
 });
 
-let myName = prompt("Type your nickname:") || "Guest";
+socket.on("connect", () => {
+    console.log("CONNECTED", socket.id);
+});
+
+let myName = prompt("Nickname:") || "Guest";
 socket.emit('join', myName);
 
 let players = {};
@@ -45,15 +49,16 @@ resize();
 
 window.onkeydown = e => keys[e.key.toLowerCase()] = true;
 window.onkeyup = e => keys[e.key.toLowerCase()] = false;
+
 window.onmousemove = e => {
     mousePos.x = e.clientX;
     mousePos.y = e.clientY;
 };
 
 setInterval(() => {
-    if (keys.w || keys.arrowup)    myPos.y -= SPEED;
-    if (keys.s || keys.arrowdown)  myPos.y += SPEED;
-    if (keys.a || keys.arrowleft)  myPos.x -= SPEED;
+    if (keys.w || keys.arrowup) myPos.y -= SPEED;
+    if (keys.s || keys.arrowdown) myPos.y += SPEED;
+    if (keys.a || keys.arrowleft) myPos.x -= SPEED;
     if (keys.d || keys.arrowright) myPos.x += SPEED;
 
     myPos.x = Math.max(0, Math.min(MAP_SIZE, myPos.x));
@@ -65,15 +70,17 @@ setInterval(() => {
     let dx = mousePos.x - centerX;
     let dy = mousePos.y - centerY;
 
-    if (Number.isFinite(dx) && Number.isFinite(dy) && (dx !== 0 || dy !== 0)) {
-        myPos.angle = Math.atan2(dy, dx);
-    }
+    myPos.angle = Math.atan2(dy, dx);
 
-    socket.emit('move', {
-        x: myPos.x,
-        y: myPos.y,
-        angle: myPos.angle
-    });
+    console.log("SENDING", myPos.angle);
+
+    if (socket.connected) {
+        socket.emit('move', {
+            x: myPos.x,
+            y: myPos.y,
+            angle: myPos.angle
+        });
+    }
 }, 16);
 
 socket.on('update', data => {
@@ -89,13 +96,6 @@ function renderPlayer(x, y, angle, color, name) {
     ctx.lineTo(-PLAYER_WIDTH, PLAYER_WIDTH);
     ctx.lineTo(-PLAYER_WIDTH, -PLAYER_WIDTH);
     ctx.closePath();
-    ctx.lineJoin = "round";
-    ctx.lineWidth = 12;
-    ctx.strokeStyle = "white";
-    ctx.stroke();
-    ctx.lineWidth = 8;
-    ctx.strokeStyle = "black";
-    ctx.stroke();
     ctx.fillStyle = color;
     ctx.fill();
     ctx.restore();
@@ -114,26 +114,16 @@ function render() {
     ctx.save();
     ctx.translate(window.innerWidth / 2 - myPos.x, window.innerHeight / 2 - myPos.y);
 
-    ctx.strokeStyle = "#333";
-    ctx.lineWidth = 1;
-    for (let i = 0; i <= MAP_SIZE; i += 100) {
-        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, MAP_SIZE); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(MAP_SIZE, i); ctx.stroke();
-    }
-
-    ctx.strokeStyle = "white";
-    ctx.lineWidth = 4;
-    ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
-
     for (let id in players) {
         const p = players[id];
         if (!p) continue;
 
+        let angle = Number.isFinite(p.angle) ? p.angle : 0;
+
         if (id === socket.id) {
-            renderPlayer(myPos.x, myPos.y, myPos.angle, 'rgb(50, 50, 50)', myName);
+            renderPlayer(myPos.x, myPos.y, myPos.angle, 'rgb(50,50,50)', myName);
         } else {
-            let angle = Number.isFinite(p.angle) ? p.angle : 0;
-            renderPlayer(p.x, p.y, angle, 'rgb(30, 30, 30)', p.name || "Guest");
+            renderPlayer(p.x, p.y, angle, 'rgb(30,30,30)', p.name || "Guest");
         }
     }
 
