@@ -130,7 +130,7 @@ function render() {
         const y = isMe ? myPos.y : p.y;
         const angle = isMe ? myPos.angle : (typeof p.angle === "number" ? p.angle : 0);
 
-        renderPlayer(x, y, angle, isMe ? '#4CAF50' : '#e74c3c');
+        renderPlayer(x, y, angle, isMe ? 'rgb(30, 30, 30)' : 'rgb(30, 30, 30)');
 
         ctx.fillStyle = "white";
         ctx.font = "bold 13px Arial";
