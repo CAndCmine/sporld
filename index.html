@@ -4,7 +4,7 @@
     <title>Sporld IO</title>
     <style>
         body { margin: 0; background: #1a1a1a; overflow: hidden; font-family: sans-serif; }
-        canvas { display: block; }
+        canvas { display: block; width: 100vw; height: 100vh; }
     </style>
 </head>
 <body>
@@ -13,31 +13,28 @@
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
-        
-        const socket = io('https://sporld-server.onrender.com');
+        const socket = io('http://localhost:3000'); 
 
-        const myName = prompt("Enter your nickname:") || "Guest";
+        const myName = prompt("Nickname:") || "Guest";
         socket.emit('join', myName);
 
         let players = {};
         let myPos = { x: 1000, y: 1000, angle: 0 };
         let mousePos = { x: 0, y: 0 };
         const keys = {};
-        const SPEED = 7;
+        const SPEED = 5;
         const MAP_SIZE = 2000;
-
-        const resize = () => {
-            const dpr = window.devicePixelRatio || 1;
-            canvas.width = window.innerWidth * dpr;
-            canvas.height = window.innerHeight * dpr;
-            ctx.scale(dpr, dpr);
-        };
-        window.addEventListener('resize', resize);
-        resize();
 
         window.onkeydown = e => { keys[e.key.toLowerCase()] = true; };
         window.onkeyup = e => { keys[e.key.toLowerCase()] = false; };
         window.onmousemove = e => { mousePos.x = e.clientX; mousePos.y = e.clientY; };
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.onresize = resize;
+        resize();
 
         setInterval(() => {
             if (keys.w || keys.arrowup)    myPos.y -= SPEED;
@@ -47,48 +44,41 @@
 
             myPos.x = Math.max(0, Math.min(MAP_SIZE, myPos.x));
             myPos.y = Math.max(0, Math.min(MAP_SIZE, myPos.y));
-
-            myPos.angle = Math.atan2(mousePos.y - window.innerHeight/2, mousePos.x - window.innerWidth/2);
+            myPos.angle = Math.atan2(mousePos.y - canvas.height/2, mousePos.x - canvas.width/2);
             
             socket.emit('move', { x: myPos.x, y: myPos.y, angle: myPos.angle });
-        }, 16);
+        }, 1000/60);
 
         socket.on('update', data => { players = data; });
 
         function render() {
-            ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
-            ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-            
-            ctx.translate(window.innerWidth/2 - myPos.x, window.innerHeight/2 - myPos.y);
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+            ctx.save();
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.translate(-myPos.x, -myPos.y);
 
             ctx.strokeStyle = "#333";
-            ctx.lineWidth = 1;
-            for(let i=0; i<=MAP_SIZE; i+=100){
-                ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,MAP_SIZE); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(MAP_SIZE,i); ctx.stroke();
+            ctx.lineWidth = 2;
+            for (let i = 0; i <= MAP_SIZE; i += 100) {
+                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, MAP_SIZE); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(MAP_SIZE, i); ctx.stroke();
             }
-
-            
-            ctx.strokeStyle = "white";
-            ctx.lineWidth = 5;
-            ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
 
             for (let id in players) {
                 const p = players[id];
-                const isMe = (id === socket.id);
-                
+                if (!p) continue;
 
-                const drawX = isMe ? myPos.x : p.x;
-                const drawY = isMe ? myPos.y : p.y;
-                const drawAngle = isMe ? myPos.angle : (p.angle || 0);
+                const isMe = (id === socket.id);
+                const x = isMe ? myPos.x : p.x;
+                const y = isMe ? myPos.y : p.y;
+                const angle = isMe ? myPos.angle : p.angle;
 
                 ctx.save();
-                ctx.translate(drawX, drawY);
-                ctx.rotate(drawAngle);
-
-
-                ctx.fillStyle = isMe ? '#4CAF50' : '#FF5252';
+                ctx.translate(x, y);
+                ctx.rotate(angle);
+                ctx.fillStyle = isMe ? '#4CAF50' : '#e74c3c';
                 ctx.beginPath();
                 ctx.moveTo(20, 0);
                 ctx.lineTo(-15, 12);
@@ -97,13 +87,13 @@
                 ctx.fill();
                 ctx.restore();
 
-
-                ctx.font = "bold 14px Arial";
-                ctx.textAlign = "center";
                 ctx.fillStyle = "white";
-                ctx.fillText(p.name || "Guest", drawX, drawY - 30);
+                ctx.font = "14px Arial";
+                ctx.textAlign = "center";
+                ctx.fillText(p.name || "Guest", x, y - 30);
             }
 
+            ctx.restore(); 
             requestAnimationFrame(render);
         }
         render();
