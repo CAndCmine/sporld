@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>IO Game</title>
     <style>
         body { margin: 0; overflow: hidden; background: #111; }
         canvas { display: block; }
@@ -36,9 +35,7 @@ window.addEventListener("mousemove", e => {
     mouse.y = e.clientY;
 });
 
-socket.on("connect", () => {
-    console.log("CONNECTED:", socket.id);
-});
+socket.on("connect", () => {});
 
 socket.on("update", data => {
     players = data;
@@ -67,16 +64,14 @@ function update() {
 }
 
 function drawTriangle(x, y, angle, color) {
-    const size = 20;
-
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle);
 
     ctx.beginPath();
-    ctx.moveTo(size, 0);
-    ctx.lineTo(-size, size);
-    ctx.lineTo(-size, -size);
+    ctx.moveTo(20, 0);
+    ctx.lineTo(-20, 15);
+    ctx.lineTo(-20, -15);
     ctx.closePath();
 
     ctx.fillStyle = color;
