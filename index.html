@@ -15,10 +15,11 @@
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const socket = io('https://sporld-server.onrender.com', {
-    transports: ['websocket']
+    transports: ['websocket'],
+    upgrade: false
 });
 
-const myName = prompt("Nickname:") || "Guest";
+let myName = prompt("Nickname:") || "Guest";
 socket.emit('join', myName);
 
 let players = {};
@@ -57,15 +58,14 @@ setInterval(() => {
     myPos.x = Math.max(0, Math.min(MAP_SIZE, myPos.x));
     myPos.y = Math.max(0, Math.min(MAP_SIZE, myPos.y));
 
-    myPos.angle = Math.atan2(
-        mousePos.y - window.innerHeight / 2,
-        mousePos.x - window.innerWidth / 2
-    );
+    let centerX = window.innerWidth / 2;
+    let centerY = window.innerHeight / 2;
+    myPos.angle = Math.atan2(mousePos.y - centerY, mousePos.x - centerX);
 
     socket.emit('move', {
-        x: Number(myPos.x),
-        y: Number(myPos.y),
-        angle: Number(myPos.angle)
+        x: myPos.x,
+        y: myPos.y,
+        angle: myPos.angle
     });
 }, 16);
 
@@ -73,7 +73,7 @@ socket.on('update', data => {
     players = data;
 });
 
-function renderPlayer(x, y, angle, color) {
+function renderPlayer(x, y, angle, color, name) {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle);
@@ -92,6 +92,11 @@ function renderPlayer(x, y, angle, color) {
     ctx.fillStyle = color;
     ctx.fill();
     ctx.restore();
+
+    ctx.fillStyle = "white";
+    ctx.font = "14px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(name, x, y - 45);
 }
 
 function render() {
@@ -118,17 +123,10 @@ function render() {
         if (!p) continue;
 
         if (id === socket.id) {
-            renderPlayer(myPos.x, myPos.y, myPos.angle, 'rgb(30, 30, 30)');
-            ctx.fillStyle = "white";
-            ctx.font = "13px Arial";
-            ctx.textAlign = "center";
-            ctx.fillText(myName, myPos.x, myPos.y - 45);
+            renderPlayer(myPos.x, myPos.y, myPos.angle, 'rgb(50, 50, 50)', myName);
         } else {
-            renderPlayer(p.x, p.y, Number(p.angle) || 0, 'rgb(30, 30, 30)');
-            ctx.fillStyle = "white";
-            ctx.font = "13px Arial";
-            ctx.textAlign = "center";
-            ctx.fillText(p.name || "Guest", p.x, p.y - 45);
+            let otherAngle = typeof p.angle === 'number' ? p.angle : 0;
+            renderPlayer(p.x, p.y, otherAngle, 'rgb(30, 30, 30)', p.name || "Guest");
         }
     }
 
