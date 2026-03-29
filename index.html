@@ -29,6 +29,7 @@
         function resize() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
+            // Adaptive zoom to fit laptop screens
             const ratio = Math.min(canvas.width / 1200, canvas.height / 800);
             zoom = ratio;
         }
@@ -42,6 +43,7 @@
             mousePos.y = e.clientY; 
         };
 
+        // Network & Logic Loop
         setInterval(() => {
             if (keys.w || keys.arrowup)    myPos.y -= SPEED;
             if (keys.s || keys.arrowdown)  myPos.y += SPEED;
@@ -51,8 +53,10 @@
             myPos.x = Math.max(0, Math.min(MAP_SIZE, myPos.x));
             myPos.y = Math.max(0, Math.min(MAP_SIZE, myPos.y));
             
+            // Calculate angle based on center of screen
             myPos.angle = Math.atan2(mousePos.y - canvas.height/2, mousePos.x - canvas.width/2);
             
+            // EMIT EVERYTHING TO SERVER
             socket.emit('move', { x: myPos.x, y: myPos.y, angle: myPos.angle });
         }, 16);
 
@@ -67,6 +71,7 @@
             ctx.scale(zoom, zoom);
             ctx.translate(-myPos.x, -myPos.y);
 
+            // World Grid
             ctx.strokeStyle = "#333";
             ctx.lineWidth = 2;
             for (let i = 0; i <= MAP_SIZE; i += 100) {
@@ -82,6 +87,9 @@
                 const p = players[id];
                 const isMe = (id === socket.id);
                 
+                // DATA SOURCE: 
+                // Use local myPos for self (no lag), 
+                // use p.angle from server for everyone else.
                 const x = isMe ? myPos.x : p.x;
                 const y = isMe ? myPos.y : p.y;
                 const angle = isMe ? myPos.angle : (p.angle || 0);
