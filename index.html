@@ -15,7 +15,7 @@ canvas { display: block; width: 100vw; height: 100vh; }
 }
 input {
     padding: 12px; font-size: 18px; border-radius: 5px; border: 1px solid #555;
-    background: #111; color: white; width: 200px; margin-bottom: 20px;
+    background: #111; color: white; width: 200px; margin-bottom: 20px; outline: none;
 }
 button {
     padding: 12px 40px; font-size: 18px; background: #008cff; color: white;
@@ -45,6 +45,7 @@ const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const ui = document.getElementById('ui-overlay');
 const statusText = document.getElementById('status');
+const nickInput = document.getElementById('nickInput');
 
 const SERVER_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
     ? 'http://localhost:3000' 
@@ -57,6 +58,7 @@ let players = {};
 let myPos = { x: 1000, y: 1000, angle: 0 };
 let mousePos = { x: 0, y: 0 };
 const keys = {};
+const MAP_SIZE = 2000;
 
 socket.on('connect', () => { 
     statusText.innerText = "Connected"; 
@@ -73,7 +75,7 @@ socket.on('update', data => {
 });
 
 document.getElementById('playBtn').onclick = () => {
-    const name = document.getElementById('nickInput').value || "Guest";
+    const name = nickInput.value || "Guest";
     socket.emit('join', name);
     ui.style.display = 'none';
     gameStarted = true;
@@ -93,6 +95,9 @@ setInterval(() => {
     if (keys.a || keys.arrowleft) myPos.x -= 5;
     if (keys.d || keys.arrowright) myPos.x += 5;
 
+    myPos.x = Math.max(0, Math.min(MAP_SIZE, myPos.x));
+    myPos.y = Math.max(0, Math.min(MAP_SIZE, myPos.y));
+
     let centerX = window.innerWidth / 2;
     let centerY = window.innerHeight / 2;
     myPos.angle = Math.atan2(mousePos.y - centerY, mousePos.x - centerX);
@@ -100,11 +105,33 @@ setInterval(() => {
     socket.emit('move', { x: myPos.x, y: myPos.y, angle: myPos.angle });
 }, 16);
 
+function drawPlayer(x, y, angle, color, name) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(20, 0); 
+    ctx.lineTo(-15, 15); 
+    ctx.lineTo(-15, -15);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.fillStyle = "white";
+    ctx.font = "bold 14px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(name, x, y - 30);
+}
+
 function render() {
     const dpr = window.devicePixelRatio || 1;
     canvas.width = window.innerWidth * dpr;
     canvas.height = window.innerHeight * dpr;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.scale(dpr, dpr);
     
     ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
@@ -113,32 +140,25 @@ function render() {
         ctx.translate(window.innerWidth / 2 - myPos.x, window.innerHeight / 2 - myPos.y);
 
         ctx.strokeStyle = "#333";
-        for (let i = 0; i <= 2000; i += 100) {
-            ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 2000); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(2000, i); ctx.stroke();
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= MAP_SIZE; i += 100) {
+            ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, MAP_SIZE); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(MAP_SIZE, i); ctx.stroke();
         }
+
+        ctx.strokeStyle = "white";
+        ctx.lineWidth = 5;
+        ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
 
         for (let id in players) {
-            const p = players[id];
-            const isMe = id === socket.id;
-            const drawX = isMe ? myPos.x : p.x;
-            const drawY = isMe ? myPos.y : p.y;
-            const drawA = isMe ? myPos.angle : p.angle;
-
-            ctx.save();
-            ctx.translate(drawX, drawY);
-            ctx.rotate(drawA);
-            ctx.fillStyle = isMe ? "#008cff" : "#ff4444";
-            ctx.beginPath();
-            ctx.moveTo(20, 0); ctx.lineTo(-15, 15); ctx.lineTo(-15, -15);
-            ctx.fill();
-            ctx.restore();
-
-            ctx.fillStyle = "white";
-            ctx.font = "14px Arial";
-            ctx.textAlign = "center";
-            ctx.fillText(p.name || "Guest", drawX, drawY - 25);
+            if (id !== socket.id) {
+                const p = players[id];
+                drawPlayer(p.x, p.y, p.angle, "#ff4444", p.name || "Guest");
+            }
         }
+
+        drawPlayer(myPos.x, myPos.y, myPos.angle, "#008cff", nickInput.value || "Guest");
+
         ctx.restore();
     }
     requestAnimationFrame(render);
