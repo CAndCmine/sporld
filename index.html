@@ -3,7 +3,7 @@
 <head>
     <title>Sporld IO</title>
     <style>
-        body { margin: 0; background: #1a1a1a; overflow: hidden; font-family: sans-serif; }
+        body { margin: 0; background: #f5f5f5; overflow: hidden; font-family: sans-serif; }
         canvas { display: block; width: 100vw; height: 100vh; image-rendering: pixelated; }
     </style>
 </head>
@@ -77,14 +77,14 @@ function render() {
     ctx.save();
     ctx.translate(window.innerWidth / 2 - myPos.x, window.innerHeight / 2 - myPos.y);
 
-    ctx.strokeStyle = "#333";
+    ctx.strokeStyle = "#ccc";
     ctx.lineWidth = 1;
     for (let i = 0; i <= MAP_SIZE; i += 100) {
         ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, MAP_SIZE); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(MAP_SIZE, i); ctx.stroke();
     }
 
-    ctx.strokeStyle = "white";
+    ctx.strokeStyle = "#222";
     ctx.lineWidth = 4;
     ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
 
@@ -102,7 +102,7 @@ function render() {
         ctx.translate(x, y);
         ctx.rotate(angle);
 
-        ctx.fillStyle = isMe ? '#4CAF50' : '#e74c3c';
+        ctx.fillStyle = isMe ? '#2ecc71' : '#e74c3c';
         ctx.beginPath();
         ctx.moveTo(25, 0);
         ctx.lineTo(-15, 15);
@@ -112,7 +112,7 @@ function render() {
 
         ctx.restore();
 
-        ctx.fillStyle = "white";
+        ctx.fillStyle = "#222";
         ctx.font = "bold 13px Arial";
         ctx.textAlign = "center";
         ctx.fillText(p.name || myName, x, y - 35);
