@@ -35,7 +35,7 @@ button:hover { background: #0072d1; }
 }
 #leaderboard {
     position: fixed; top: 20px; right: 20px; background: rgba(0, 0, 0, 0.5); 
-    padding: 15px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.2);
+    padding-left: 60px; padding-bottom: 15px; padding-top: 10px;border-radius: 5px; border: 2px solid rgba(255, 255, 255, 0.2);
     min-width: 150px; pointer-events: none; z-index: 5;
 }
 .lb-item { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px; }
@@ -55,6 +55,7 @@ button:hover { background: #0072d1; }
     </div>
 </div>
 <div id="leaderboard"></div>
+  
 <div id="joystick-container"><div id="joystick-knob"></div></div>
 <canvas id="canvas"></canvas>
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
@@ -135,7 +136,7 @@ setInterval(() => {
 
 function updateLeaderboard() {
     let sorted = Object.values(players).sort((a, b) => b.score - a.score).slice(0, 5);
-    let html = '<div style="font-size:10px; color:#888; margin-bottom:5px;">LEADERBOARD</div>';
+    let html = '<div style="font-size:10px; color:"white"; margin-bottom:5px;">Leaderboard</div>';
     sorted.forEach(p => {
         html += `<div class="lb-item"><span class="lb-name">${p.name || "Guest"}</span><span>${p.score}</span></div>`;
     });
