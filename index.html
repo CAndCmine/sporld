@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <title>IO Game</title>
     <style>
         body { margin: 0; overflow: hidden; background: #111; }
         canvas { display: block; }
@@ -17,7 +18,9 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-const socket = io("https://sporld-server.onrender.com");
+const socket = io("https://sporld-server.onrender.com", {
+    transports: ["websocket"]
+});
 
 let players = {};
 let myPos = { x: 500, y: 500, angle: 0 };
@@ -33,7 +36,9 @@ window.addEventListener("mousemove", e => {
     mouse.y = e.clientY;
 });
 
-socket.on("connect", () => {});
+socket.on("connect", () => {
+    console.log("CONNECTED:", socket.id);
+});
 
 socket.on("update", data => {
     players = data;
