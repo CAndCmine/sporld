@@ -9,6 +9,7 @@
 </head>
 <body>
 <canvas id="canvas"></canvas>
+
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script>
 const canvas = document.getElementById('canvas');
@@ -44,8 +45,8 @@ setInterval(() => {
     if (keys.d || keys.arrowright) myPos.x += 5;
 
     myPos.angle = Math.atan2(
-        mousePos.y - window.innerHeight / 2,
-        mousePos.x - window.innerWidth / 2
+        mousePos.y - (window.innerHeight / 2),
+        mousePos.x - (window.innerWidth / 2)
     );
 
     socket.emit('move', { x: myPos.x, y: myPos.y, angle: myPos.angle });
@@ -79,15 +80,16 @@ function drawPlayer(x, y, angle, name) {
 
 function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
     ctx.save();
-    ctx.translate(canvas.width / 2 - myPos.x, canvas.height / 2 - myPos.y);
+    ctx.translate((canvas.width / 2) - myPos.x, (canvas.height / 2) - myPos.y);
 
     for (let id in players) {
         const p = players[id];
         if (id === socket.id) {
             drawPlayer(myPos.x, myPos.y, myPos.angle, myName);
         } else {
-            drawPlayer(p.x, p.y, p.angle || 0, p.name || "Guest");
+            drawPlayer(p.x, p.y, p.angle, p.name);
         }
     }
 
