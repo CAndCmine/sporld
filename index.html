@@ -13,13 +13,14 @@
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
+        
         const socket = io('https://sporld-server.onrender.com');
 
         const myName = prompt("Enter your nickname:") || "Guest";
         socket.emit('join', myName);
 
         let players = {};
-        let myPos = { x: 1000, y: 1000 };
+        let myPos = { x: 1000, y: 1000, angle: 0 };
         let mousePos = { x: 0, y: 0 };
         const keys = {};
         const SPEED = 7;
@@ -27,10 +28,9 @@
 
         const resize = () => {
             const dpr = window.devicePixelRatio || 1;
-            canvas.style.width = window.innerWidth + 'px';
-            canvas.style.height = window.innerHeight + 'px';
             canvas.width = window.innerWidth * dpr;
             canvas.height = window.innerHeight * dpr;
+            ctx.scale(dpr, dpr);
         };
         window.addEventListener('resize', resize);
         resize();
@@ -48,20 +48,19 @@
             myPos.x = Math.max(0, Math.min(MAP_SIZE, myPos.x));
             myPos.y = Math.max(0, Math.min(MAP_SIZE, myPos.y));
 
-            const angle = Math.atan2(mousePos.y - window.innerHeight/2, mousePos.x - window.innerWidth/2);
-            socket.emit('move', { x: myPos.x, y: myPos.y, angle: angle });
+            myPos.angle = Math.atan2(mousePos.y - window.innerHeight/2, mousePos.x - window.innerWidth/2);
+            
+            socket.emit('move', { x: myPos.x, y: myPos.y, angle: myPos.angle });
         }, 16);
 
         socket.on('update', data => { players = data; });
 
         function render() {
-            const dpr = window.devicePixelRatio || 1;
+            ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
+            ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
             
-            ctx.setTransform(1, 0, 0, 1, 0, 0);
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            ctx.scale(dpr, dpr);
             ctx.translate(window.innerWidth/2 - myPos.x, window.innerHeight/2 - myPos.y);
+
 
             ctx.strokeStyle = "#333";
             ctx.lineWidth = 1;
@@ -69,6 +68,7 @@
                 ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,MAP_SIZE); ctx.stroke();
                 ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(MAP_SIZE,i); ctx.stroke();
             }
+
             
             ctx.strokeStyle = "white";
             ctx.lineWidth = 5;
@@ -78,17 +78,17 @@
                 const p = players[id];
                 const isMe = (id === socket.id);
                 
-                ctx.save();
-                
+
                 const drawX = isMe ? myPos.x : p.x;
                 const drawY = isMe ? myPos.y : p.y;
-                
+                const drawAngle = isMe ? myPos.angle : (p.angle || 0);
+
+                ctx.save();
                 ctx.translate(drawX, drawY);
-                
-                const drawAngle = isMe ? Math.atan2(mousePos.y - window.innerHeight/2, mousePos.x - window.innerWidth/2) : (p.angle || 0);
                 ctx.rotate(drawAngle);
 
-                ctx.fillStyle = isMe ? '#4CAF50' : 'white';
+
+                ctx.fillStyle = isMe ? '#4CAF50' : '#FF5252';
                 ctx.beginPath();
                 ctx.moveTo(20, 0);
                 ctx.lineTo(-15, 12);
@@ -97,9 +97,10 @@
                 ctx.fill();
                 ctx.restore();
 
+
                 ctx.font = "bold 14px Arial";
                 ctx.textAlign = "center";
-                ctx.fillStyle = isMe ? '#4CAF50' : 'white';
+                ctx.fillStyle = "white";
                 ctx.fillText(p.name || "Guest", drawX, drawY - 30);
             }
 
