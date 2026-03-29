@@ -20,8 +20,6 @@ let players = {};
 let myId = null;
 
 let pos = { x: 1000, y: 1000 };
-let angle = 0;
-
 let keys = {};
 let mouse = { x: 0, y: 0 };
 
@@ -58,15 +56,13 @@ setInterval(() => {
     pos.x = Math.max(0, Math.min(MAP_SIZE, pos.x));
     pos.y = Math.max(0, Math.min(MAP_SIZE, pos.y));
 
-    angle = Math.atan2(
-        mouse.y - canvas.height / 2,
-        mouse.x - canvas.width / 2
-    );
-
     socket.emit("move", {
         x: pos.x,
         y: pos.y,
-        angle: angle
+        angle: Math.atan2(
+            mouse.y - canvas.height / 2,
+            mouse.x - canvas.width / 2
+        )
     });
 }, 16);
 
@@ -77,7 +73,7 @@ socket.on("update", data => {
 function drawPlayer(p, isMe) {
     ctx.save();
     ctx.translate(p.x, p.y);
-    ctx.rotate(p.angle);
+    ctx.rotate(p.angle || 0);
 
     ctx.fillStyle = isMe ? "#4CAF50" : "#e74c3c";
 
