@@ -54,7 +54,6 @@ const ui = document.getElementById('ui-overlay');
 const nickInput = document.getElementById('nickInput');
 const playBtn = document.getElementById('playBtn');
 
-// Set your server URL here
 const socket = io('https://sporld-server.onrender.com', {
     transports: ['websocket']
 });
@@ -66,7 +65,7 @@ let mousePos = { x: 0, y: 0 };
 const keys = {};
 
 const SPEED = 5;
-const MAP_SIZE = 3000; // Increased map size
+const MAP_SIZE = 3000;
 const PLAYER_SIZE = 25;
 
 function resize() {
@@ -76,7 +75,6 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 
-// UI Interaction
 playBtn.onclick = () => {
     const name = nickInput.value.trim() || "Guest";
     socket.emit('join', name);
@@ -91,7 +89,6 @@ window.onmousemove = e => {
     mousePos.y = e.clientY;
 };
 
-// Physics/Input Loop
 setInterval(() => {
     if (!gameStarted) return;
 
