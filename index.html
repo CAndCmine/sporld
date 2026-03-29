@@ -81,10 +81,13 @@ function renderPlayer(x, y, angle, color) {
 
     ctx.beginPath();
 
+    const r = 6;
+
     ctx.moveTo(PLAYER_LENGTH, 0);
-    ctx.quadraticCurveTo(0, PLAYER_WIDTH, -PLAYER_WIDTH, PLAYER_WIDTH);
-    ctx.quadraticCurveTo(-PLAYER_WIDTH - 5, 0, -PLAYER_WIDTH, -PLAYER_WIDTH);
-    ctx.quadraticCurveTo(0, -PLAYER_WIDTH, PLAYER_LENGTH, 0);
+    ctx.quadraticCurveTo(PLAYER_LENGTH - r, -r, 0, -PLAYER_WIDTH);
+    ctx.quadraticCurveTo(-r, -PLAYER_WIDTH + r, -PLAYER_WIDTH, 0);
+    ctx.quadraticCurveTo(-r, PLAYER_WIDTH - r, 0, PLAYER_WIDTH);
+    ctx.quadraticCurveTo(PLAYER_LENGTH - r, r, PLAYER_LENGTH, 0);
 
     ctx.closePath();
     ctx.fill();
