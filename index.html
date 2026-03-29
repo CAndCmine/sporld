@@ -69,6 +69,7 @@ const joyCheck = document.getElementById('joyCheck');
 const joyContainer = document.getElementById('joystick-container');
 const joyKnob = document.getElementById('joystick-knob');
 const lbElement = document.getElementById('leaderboard');
+
 const socket = io(window.location.hostname === "localhost" ? 'http://localhost:3000' : 'https://sporld-server.onrender.com');
 
 let gameStarted = false;
@@ -79,7 +80,11 @@ let mousePos = { x: 0, y: 0 };
 const keys = {};
 const MAP_SIZE = 2000;
 
-socket.on('connect', () => { statusText.innerText = "Connected"; statusText.style.color = "white"; });
+socket.on('connect', () => { 
+    statusText.innerText = "Connected"; 
+    statusText.style.color = "#00ff00"; 
+});
+
 socket.on('update', data => { 
     players = data || {}; 
     updateLeaderboard();
@@ -124,14 +129,14 @@ setInterval(() => {
 
 function updateLeaderboard() {
     let sorted = Object.values(players).sort((a, b) => b.score - a.score).slice(0, 5);
-    lbElement.innerHTML = sorted.map(p => `<div class="lb-item"><span class="lb-name">${p.name}</span><span class="lb-score">${Math.floor(p.score)}</span></div>`).join('');
+    lbElement.innerHTML = sorted.map(p => `<div class="lb-item"><span class="lb-name">${p.name || "Guest"}</span><span class="lb-score">${Math.floor(p.score || 0)}</span></div>`).join('');
 }
 
-function drawPlayer(x, y, angle, name) {
+function drawPlayer(x, y, angle, name, color) {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle);
-    ctx.fillStyle = "white";
+    ctx.fillStyle = color;
     ctx.beginPath();
     ctx.moveTo(20, 0); ctx.lineTo(-15, 15); ctx.lineTo(-15, -15);
     ctx.closePath();
@@ -147,7 +152,11 @@ function render() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    if (!gameStarted) { requestAnimationFrame(render); return; }
+    
+    if (!gameStarted) { 
+        requestAnimationFrame(render); 
+        return; 
+    }
 
     ctx.save();
     ctx.translate(window.innerWidth / 2 - myPos.x, window.innerHeight / 2 - myPos.y);
@@ -163,14 +172,14 @@ function render() {
         ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, Math.PI * 2); ctx.fill();
     });
 
-    for (let id in players) {
-        const p = players[id];
-        if (id === socket.id) {
-            drawPlayer(myPos.x, myPos.y, myPos.angle, myPos.name);
-        } else {
-            drawPlayer(p.x, p.y, p.angle, p.name);
+    Object.keys(players).forEach(id => {
+        if (id !== socket.id) {
+            const p = players[id];
+            drawPlayer(p.x, p.y, p.angle, p.name || "Guest", "white");
         }
-    }
+    });
+
+    drawPlayer(myPos.x, myPos.y, myPos.angle, myPos.name, "#008cff");
 
     ctx.restore();
     requestAnimationFrame(render);
