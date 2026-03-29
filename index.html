@@ -29,8 +29,8 @@
         function resize() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            const baseDimension = 1000;
-            zoom = Math.min(canvas.width, canvas.height) / baseDimension;
+            const ratio = Math.min(canvas.width / 1200, canvas.height / 800);
+            zoom = ratio;
         }
         window.addEventListener('resize', resize);
         resize();
@@ -80,16 +80,15 @@
 
             for (let id in players) {
                 const p = players[id];
-                if (!p) continue;
-
                 const isMe = (id === socket.id);
-                const drawX = isMe ? myPos.x : p.x;
-                const drawY = isMe ? myPos.y : p.y;
-                const drawAngle = isMe ? myPos.angle : (p.angle || 0);
+                
+                const x = isMe ? myPos.x : p.x;
+                const y = isMe ? myPos.y : p.y;
+                const angle = isMe ? myPos.angle : (p.angle || 0);
 
                 ctx.save();
-                ctx.translate(drawX, drawY);
-                ctx.rotate(drawAngle);
+                ctx.translate(x, y);
+                ctx.rotate(angle);
                 
                 ctx.fillStyle = isMe ? '#4CAF50' : '#e74c3c';
                 ctx.beginPath();
@@ -103,7 +102,7 @@
                 ctx.fillStyle = "white";
                 ctx.font = "bold 20px Arial";
                 ctx.textAlign = "center";
-                ctx.fillText(p.name || "Guest", drawX, drawY - 40);
+                ctx.fillText(p.name || "Guest", x, y - 40);
             }
 
             requestAnimationFrame(render);
