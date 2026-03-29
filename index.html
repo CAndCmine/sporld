@@ -1,46 +1,39 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Sporld IO</title>
-    <style>
-        body { margin: 0; background: #1a1a1a; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        canvas { display: block; width: 100vw; height: 100vh; image-rendering: pixelated; }
-        
-        #ui-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); display: flex; flex-direction: column;
-            align-items: center; justify-content: center; z-index: 10;
-        }
-
-        .menu-card {
-            background: #2a2a2a; padding: 30px; border-radius: 12px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5); text-align: center; border: 2px solid #444;
-        }
-
-        h1 { color: white; margin-bottom: 20px; letter-spacing: 2px; }
-        
-        input {
-            padding: 12px; font-size: 18px; border-radius: 6px; border: none;
-            width: 250px; margin-bottom: 20px; outline: none;
-        }
-
-        button {
-            padding: 12px 30px; font-size: 18px; background: #4CAF50;
-            color: white; border: none; border-radius: 6px; cursor: pointer;
-            transition: 0.2s; font-weight: bold;
-        }
-
-        button:hover { background: #45a049; transform: scale(1.05); }
-    </style>
+<title>Sporld IO</title>
+<style>
+body { margin: 0; background: #1a1a1a; overflow: hidden; font-family: sans-serif; color: white; }
+canvas { display: block; width: 100vw; height: 100vh; }
+#ui-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 10;
+}
+.menu {
+    background: #222; padding: 40px; border-radius: 15px; text-align: center;
+    border: 2px solid #444; box-shadow: 0 0 30px rgba(0,0,0,0.5);
+}
+input {
+    padding: 12px; font-size: 18px; border-radius: 5px; border: 1px solid #555;
+    background: #111; color: white; width: 200px; margin-bottom: 20px;
+}
+button {
+    padding: 12px 40px; font-size: 18px; background: #008cff; color: white;
+    border: none; border-radius: 5px; cursor: pointer; font-weight: bold;
+}
+button:hover { background: #0072d1; }
+#status { margin-top: 15px; font-size: 12px; color: #888; }
+</style>
 </head>
 <body>
 
 <div id="ui-overlay">
-    <div class="menu-card">
+    <div class="menu">
         <h1>SPORLD.IO</h1>
-        <input type="text" id="nickInput" placeholder="Enter Nickname..." maxlength="12">
+        <input type="text" id="nickInput" placeholder="Nickname" maxlength="10">
         <br>
         <button id="playBtn">PLAY</button>
+        <div id="status">Connecting...</div>
     </div>
 </div>
 
@@ -51,12 +44,13 @@
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const ui = document.getElementById('ui-overlay');
-const nickInput = document.getElementById('nickInput');
-const playBtn = document.getElementById('playBtn');
+const statusText = document.getElementById('status');
 
-const socket = io('https://sporld-server.onrender.com', {
-    transports: ['websocket']
-});
+const SERVER_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
+    ? 'http://localhost:3000' 
+    : 'https://sporld-server.onrender.com';
+
+const socket = io(SERVER_URL, { transports: ['websocket'] });
 
 let gameStarted = false;
 let players = {};
@@ -64,19 +58,22 @@ let myPos = { x: 1000, y: 1000, angle: 0 };
 let mousePos = { x: 0, y: 0 };
 const keys = {};
 
-const SPEED = 5;
-const MAP_SIZE = 3000;
-const PLAYER_SIZE = 25;
+socket.on('connect', () => { 
+    statusText.innerText = "Connected"; 
+    statusText.style.color = "#4CAF50"; 
+});
 
-function resize() {
-    canvas.width = window.innerWidth * (window.devicePixelRatio || 1);
-    canvas.height = window.innerHeight * (window.devicePixelRatio || 1);
-}
-window.addEventListener('resize', resize);
-resize();
+socket.on('connect_error', () => { 
+    statusText.innerText = "Server Offline"; 
+    statusText.style.color = "#ff4444"; 
+});
 
-playBtn.onclick = () => {
-    const name = nickInput.value.trim() || "Guest";
+socket.on('update', data => { 
+    players = data; 
+});
+
+document.getElementById('playBtn').onclick = () => {
+    const name = document.getElementById('nickInput').value || "Guest";
     socket.emit('join', name);
     ui.style.display = 'none';
     gameStarted = true;
@@ -84,23 +81,69 @@ playBtn.onclick = () => {
 
 window.onkeydown = e => keys[e.key.toLowerCase()] = true;
 window.onkeyup = e => keys[e.key.toLowerCase()] = false;
-window.onmousemove = e => {
-    mousePos.x = e.clientX;
-    mousePos.y = e.clientY;
+window.onmousemove = e => { 
+    mousePos.x = e.clientX; 
+    mousePos.y = e.clientY; 
 };
 
 setInterval(() => {
     if (!gameStarted) return;
+    if (keys.w || keys.arrowup) myPos.y -= 5;
+    if (keys.s || keys.arrowdown) myPos.y += 5;
+    if (keys.a || keys.arrowleft) myPos.x -= 5;
+    if (keys.d || keys.arrowright) myPos.x += 5;
 
-    if (keys.w || keys.arrowup) myPos.y -= SPEED;
-    if (keys.s || keys.arrowdown) myPos.y += SPEED;
-    if (keys.a || keys.arrowleft) myPos.x -= SPEED;
-    if (keys.d || keys.arrowright) myPos.x += SPEED;
-
-    myPos.x = Math.max(0, Math.min(MAP_SIZE, myPos.x));
-    myPos.y = Math.max(0, Math.min(MAP_SIZE, myPos.y));
-
-    // Calculate angle relative to screen center (where player is)
     let centerX = window.innerWidth / 2;
     let centerY = window.innerHeight / 2;
-    myPos.angle = Math.atan2(mousePos.y - centerY,
+    myPos.angle = Math.atan2(mousePos.y - centerY, mousePos.x - centerX);
+
+    socket.emit('move', { x: myPos.x, y: myPos.y, angle: myPos.angle });
+}, 16);
+
+function render() {
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = window.innerWidth * dpr;
+    canvas.height = window.innerHeight * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    
+    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
+    if (gameStarted) {
+        ctx.save();
+        ctx.translate(window.innerWidth / 2 - myPos.x, window.innerHeight / 2 - myPos.y);
+
+        ctx.strokeStyle = "#333";
+        for (let i = 0; i <= 2000; i += 100) {
+            ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 2000); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(2000, i); ctx.stroke();
+        }
+
+        for (let id in players) {
+            const p = players[id];
+            const isMe = id === socket.id;
+            const drawX = isMe ? myPos.x : p.x;
+            const drawY = isMe ? myPos.y : p.y;
+            const drawA = isMe ? myPos.angle : p.angle;
+
+            ctx.save();
+            ctx.translate(drawX, drawY);
+            ctx.rotate(drawA);
+            ctx.fillStyle = isMe ? "#008cff" : "#ff4444";
+            ctx.beginPath();
+            ctx.moveTo(20, 0); ctx.lineTo(-15, 15); ctx.lineTo(-15, -15);
+            ctx.fill();
+            ctx.restore();
+
+            ctx.fillStyle = "white";
+            ctx.font = "14px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText(p.name || "Guest", drawX, drawY - 25);
+        }
+        ctx.restore();
+    }
+    requestAnimationFrame(render);
+}
+render();
+</script>
+</body>
+</html>
