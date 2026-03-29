@@ -14,7 +14,9 @@
 <script>
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-const socket = io('https://sporld-server.onrender.com');
+const socket = io('https://sporld-server.onrender.com', {
+    transports: ['websocket']
+});
 
 const myName = prompt("Nickname:") || "Guest";
 socket.emit('join', myName);
@@ -116,8 +118,8 @@ function render() {
         if (!p) continue;
 
         const isMe = (id === socket.id);
-        const x = isMe ? myPos.x : p.x;
-        const y = isMe ? myPos.y : p.y;
+        const x = isMe ? myPos.x : (Number(p.x) || 0);
+        const y = isMe ? myPos.y : (Number(p.y) || 0);
         const angle = isMe ? myPos.angle : (Number(p.angle) || 0);
 
         renderPlayer(x, y, angle, 'rgb(30, 30, 30)');
@@ -125,7 +127,7 @@ function render() {
         ctx.fillStyle = "white";
         ctx.font = "13px Arial";
         ctx.textAlign = "center";
-        ctx.fillText(p.name || (isMe ? myName : "Guest"), x, y - 45);
+        ctx.fillText(p.name || "Guest", x, y - 45);
     }
 
     ctx.restore();
