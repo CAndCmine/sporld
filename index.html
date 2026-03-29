@@ -58,6 +58,7 @@ const keys = {};
 const MAP_SIZE = 2000;
 
 socket.on('connect', () => { statusText.innerText = "Connected"; statusText.style.color = "#00ff00"; });
+
 socket.on('update', data => { 
     players = data.players || {}; 
     bullets = data.bullets || {};
@@ -75,10 +76,11 @@ window.onkeydown = e => keys[e.key.toLowerCase()] = true;
 window.onkeyup = e => keys[e.key.toLowerCase()] = false;
 window.onmousemove = e => { mousePos.x = e.clientX; mousePos.y = e.clientY; };
 
-window.onmousedown = (e) => {
+window.addEventListener('mousedown', (e) => {
     if (!gameStarted) return;
+    e.preventDefault();
     socket.emit('fire', { x: myPos.x, y: myPos.y, angle: myPos.angle });
-};
+});
 
 setInterval(() => {
     if (!gameStarted) return;
@@ -134,14 +136,20 @@ function render() {
     ctx.translate(window.innerWidth / 2 - myPos.x, window.innerHeight / 2 - myPos.y);
 
     ctx.strokeStyle = "#333";
+    ctx.lineWidth = 1;
     for (let i = 0; i <= MAP_SIZE; i += 100) {
         ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, MAP_SIZE); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(MAP_SIZE, i); ctx.stroke();
     }
 
-    ctx.fillStyle = "#ff4444";
     Object.values(bullets).forEach(b => {
-        ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#ff4444";
+        ctx.strokeStyle = "white";
+        ctx.lineWidth = 2;
+        ctx.beginPath(); 
+        ctx.arc(b.x, b.y, 6, 0, Math.PI * 2); 
+        ctx.fill();
+        ctx.stroke();
     });
 
     Object.keys(players).forEach(id => {
