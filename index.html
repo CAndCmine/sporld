@@ -4,7 +4,7 @@
     <title>Sporld IO</title>
     <style>
         body { margin: 0; background: #1a1a1a; overflow: hidden; font-family: sans-serif; }
-        canvas { display: block; width: 100vw; height: 100vh; }
+        canvas { display: block; width: 100vw; height: 100vh; image-rendering: -webkit-optimize-contrast; }
     </style>
 </head>
 <body>
@@ -13,7 +13,7 @@
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
-        const socket = io('https://sporld-server.onrender.com'); 
+        const socket = io('https://sporld-server.onrender.com');
 
         const myName = prompt("Nickname:") || "Guest";
         socket.emit('join', myName);
@@ -27,10 +27,10 @@
 
         function resize() {
             const dpr = window.devicePixelRatio || 1;
-            canvas.style.width = window.innerWidth + 'px';
-            canvas.style.height = window.innerHeight + 'px';
             canvas.width = window.innerWidth * dpr;
             canvas.height = window.innerHeight * dpr;
+            canvas.style.width = window.innerWidth + 'px';
+            canvas.style.height = window.innerHeight + 'px';
         }
         window.addEventListener('resize', resize);
         resize();
@@ -53,7 +53,11 @@
             
             myPos.angle = Math.atan2(mousePos.y - window.innerHeight/2, mousePos.x - window.innerWidth/2);
             
-            socket.emit('move', { x: myPos.x, y: myPos.y, angle: myPos.angle });
+            socket.emit('move', { 
+                x: Math.round(myPos.x), 
+                y: Math.round(myPos.y), 
+                angle: Number(myPos.angle.toFixed(3)) 
+            });
         }, 16);
 
         socket.on('update', data => { players = data; });
@@ -77,17 +81,17 @@
             ctx.lineWidth = 4;
             ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
 
-            for (let id in players) {
+            Object.keys(players).forEach(id => {
                 const p = players[id];
                 const isMe = (id === socket.id);
                 
-                const x = isMe ? myPos.x : p.x;
-                const y = isMe ? myPos.y : p.y;
-                const angle = isMe ? myPos.angle : (p.angle || 0);
+                const drawX = isMe ? myPos.x : p.x;
+                const drawY = isMe ? myPos.y : p.y;
+                const drawAngle = isMe ? myPos.angle : (p.angle || 0);
 
                 ctx.save();
-                ctx.translate(x, y);
-                ctx.rotate(angle);
+                ctx.translate(drawX, drawY);
+                ctx.rotate(drawAngle);
                 
                 ctx.fillStyle = isMe ? '#4CAF50' : '#e74c3c';
                 ctx.beginPath();
@@ -101,8 +105,8 @@
                 ctx.fillStyle = "white";
                 ctx.font = "bold 16px Arial";
                 ctx.textAlign = "center";
-                ctx.fillText(p.name || "Guest", x, y - 35);
-            }
+                ctx.fillText(p.name || "Guest", drawX, drawY - 35);
+            });
             ctx.restore();
 
             requestAnimationFrame(render);
