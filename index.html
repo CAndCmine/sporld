@@ -24,18 +24,25 @@
         const keys = {};
         const SPEED = 5;
         const MAP_SIZE = 2000;
-        const ZOOM = 0.8; 
+        let zoom = 1;
+
+        function resize() {
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = window.innerWidth * dpr;
+            canvas.height = window.innerHeight * dpr;
+            
+            const baseDimension = 1000;
+            zoom = (Math.min(window.innerWidth, window.innerHeight) / baseDimension) * dpr;
+        }
+        window.addEventListener('resize', resize);
+        resize();
 
         window.onkeydown = e => { keys[e.key.toLowerCase()] = true; };
         window.onkeyup = e => { keys[e.key.toLowerCase()] = false; };
-        window.onmousemove = e => { mousePos.x = e.clientX; mousePos.y = e.clientY; };
-
-        function resize() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        }
-        window.onresize = resize;
-        resize();
+        window.onmousemove = e => { 
+            mousePos.x = e.clientX * (window.devicePixelRatio || 1); 
+            mousePos.y = e.clientY * (window.devicePixelRatio || 1); 
+        };
 
         setInterval(() => {
             if (keys.w || keys.arrowup)    myPos.y -= SPEED;
@@ -53,12 +60,12 @@
         socket.on('update', data => { players = data; });
 
         function render() {
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
             ctx.fillStyle = '#1a1a1a';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            ctx.save();
             ctx.translate(canvas.width / 2, canvas.height / 2);
-            ctx.scale(ZOOM, ZOOM);
+            ctx.scale(zoom, zoom);
             ctx.translate(-myPos.x, -myPos.y);
 
             ctx.strokeStyle = "#333";
@@ -69,6 +76,7 @@
             }
 
             ctx.strokeStyle = "white";
+            ctx.lineWidth = 5;
             ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
 
             for (let id in players) {
@@ -85,20 +93,19 @@
                 ctx.rotate(angle);
                 ctx.fillStyle = isMe ? '#4CAF50' : '#e74c3c';
                 ctx.beginPath();
-                ctx.moveTo(20, 0);
-                ctx.lineTo(-15, 12);
-                ctx.lineTo(-15, -12);
+                ctx.moveTo(30, 0);
+                ctx.lineTo(-20, 18);
+                ctx.lineTo(-20, -18);
                 ctx.closePath();
                 ctx.fill();
                 ctx.restore();
 
                 ctx.fillStyle = "white";
-                ctx.font = "bold 16px Arial";
+                ctx.font = "bold 24px Arial";
                 ctx.textAlign = "center";
-                ctx.fillText(p.name || "Guest", x, y - 30);
+                ctx.fillText(p.name || "Guest", x, y - 40);
             }
 
-            ctx.restore(); 
             requestAnimationFrame(render);
         }
         render();
