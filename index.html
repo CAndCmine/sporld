@@ -13,7 +13,7 @@ canvas { display: block; width: 100vw; height: 100vh; }
     background: #222; padding: 40px; border-radius: 15px; text-align: center;
     border: 2px solid #444; box-shadow: 0 0 30px rgba(0,0,0,0.5);
 }
-input:not([type="checkbox"]) {
+input {
     padding: 12px; font-size: 18px; border-radius: 5px; border: 2px solid #555;
     background: #111; color: white; width: 200px; margin-bottom: 20px; outline: none;
 }
@@ -21,20 +21,18 @@ button {
     padding: 12px 40px; font-size: 18px; background: #008cff; color: white;
     border: none; border-radius: 5px; cursor: pointer; font-weight: bold;
 }
-button:hover { background: #0072d1; }
 #status { margin-top: 15px; font-size: 12px; color: #888; }
 #leaderboard {
     position: fixed; top: 20px; right: 20px; background: rgba(0, 0, 0, 0.4); 
-    padding: 12px 15px 18px 15px; border-radius: 5px; border: 1px solid rgba(255, 255, 255, 0.1);
-    min-width: 140px; pointer-events: none; z-index: 5;
+    padding: 12px; border-radius: 5px; min-width: 140px; pointer-events: none; z-index: 5;
 }
-.lb-item { display: flex; justify-content: space-between; font-size: 14px; padding: 4px 0; }
 </style>
 </head>
 <body>
 <div id="ui-overlay">
     <div class="menu">
         <input type="text" id="nickInput" placeholder="Nickname" maxlength="10">
+        <br>
         <button id="playBtn">Join game</button>
         <div id="status">Connecting...</div>
     </div>
@@ -59,11 +57,7 @@ let mousePos = { x: 0, y: 0 };
 const keys = {};
 const MAP_SIZE = 2000;
 
-socket.on('connect', () => { 
-    statusText.innerText = "Connected"; 
-    statusText.style.color = "#00ff00"; 
-});
-
+socket.on('connect', () => { statusText.innerText = "Connected"; statusText.style.color = "#00ff00"; });
 socket.on('update', data => { 
     players = data.players || {}; 
     bullets = data.bullets || {};
@@ -80,7 +74,8 @@ document.getElementById('playBtn').onclick = () => {
 window.onkeydown = e => keys[e.key.toLowerCase()] = true;
 window.onkeyup = e => keys[e.key.toLowerCase()] = false;
 window.onmousemove = e => { mousePos.x = e.clientX; mousePos.y = e.clientY; };
-window.onmousedown = () => {
+
+window.onmousedown = (e) => {
     if (!gameStarted) return;
     socket.emit('fire', { x: myPos.x, y: myPos.y, angle: myPos.angle });
 };
@@ -102,7 +97,7 @@ setInterval(() => {
 
 function updateLeaderboard() {
     let sorted = Object.values(players).sort((a, b) => b.score - a.score).slice(0, 5);
-    lbElement.innerHTML = sorted.map(p => `<div class="lb-item"><span>${p.name || "Guest"}</span><span>${Math.floor(p.score || 0)}</span></div>`).join('');
+    lbElement.innerHTML = sorted.map(p => `<div>${p.name || "Guest"}: ${Math.floor(p.score || 0)}</div>`).join('');
 }
 
 function drawPlayer(x, y, angle, name, color) {
@@ -139,7 +134,6 @@ function render() {
     ctx.translate(window.innerWidth / 2 - myPos.x, window.innerHeight / 2 - myPos.y);
 
     ctx.strokeStyle = "#333";
-    ctx.lineWidth = 1;
     for (let i = 0; i <= MAP_SIZE; i += 100) {
         ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, MAP_SIZE); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(MAP_SIZE, i); ctx.stroke();
