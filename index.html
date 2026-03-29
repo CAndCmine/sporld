@@ -83,6 +83,9 @@ function renderPlayer(x, y, angle, color) {
     ctx.lineTo(-PLAYER_WIDTH, -PLAYER_WIDTH);
     ctx.closePath();
 
+    ctx.lineJoin = "round"; 
+    ctx.lineCap = "round";
+
     ctx.fillStyle = color;
     ctx.fill();
 
