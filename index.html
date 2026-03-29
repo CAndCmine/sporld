@@ -122,12 +122,12 @@ function render() {
         const p = players[id];
         if (!p) continue;
 
-        if (id === socket.id) {
-            renderPlayer(myPos.x, myPos.y, myPos.angle, 'rgb(50, 50, 50)', myName);
-        } else {
-            let otherAngle = typeof p.angle === 'number' ? p.angle : 0;
-            renderPlayer(p.x, p.y, otherAngle, 'rgb(30, 30, 30)', p.name || "Guest");
-        }
+        let angle = typeof p.angle === 'number' ? p.angle : 0;
+
+        renderPlayer(p.x, p.y, angle,
+            id === socket.id ? 'rgb(50, 50, 50)' : 'rgb(30, 30, 30)',
+            p.name || "Guest"
+        );
     }
 
     ctx.restore();
