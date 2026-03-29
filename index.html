@@ -9,7 +9,10 @@
         .menu { background: #222; padding: 40px; border-radius: 15px; text-align: center; border: 2px solid #444; }
         input { padding: 12px; font-size: 18px; border-radius: 5px; border: 2px solid #555; background: #111; color: white; width: 200px; margin-bottom: 20px; outline: none; }
         button { padding: 12px 40px; font-size: 18px; background: #008cff; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        #leaderboard { position: fixed; top: 20px; right: 20px; background: rgba(0, 0, 0, 0.5); padding: 15px; border-radius: 5px; min-width: 150px; z-index: 5; pointer-events: none; }
+        #leaderboard { position: fixed; top: 20px; right: 20px; background: rgba(0, 0, 0, 0.4); padding: 12px 15px 18px 15px; border-radius: 5px; border: 1px solid rgba(255, 255, 255, 0.1); min-width: 140px; z-index: 5; pointer-events: none; }
+        .lb-item { display: flex; justify-content: space-between; font-size: 14px; padding: 4px 0; font-weight: normal; }
+        .lb-name { margin-right: 20px; color: rgba(255,255,255,0.9); }
+        .lb-score { color: rgba(255,255,255,0.6); }
     </style>
 </head>
 <body>
@@ -29,19 +32,19 @@
         const ctx = canvas.getContext('2d');
         const nickInput = document.getElementById('nickInput');
         const lbElement = document.getElementById('leaderboard');
-        const socket = io(window.location.hostname === "localhost" ? 'http://localhost:3000' : 'https://sporld-server.onrender.com');
+        const SERVER_URL = window.location.hostname === "localhost" ? 'http://localhost:3000' : 'https://sporld-server.onrender.com';
+        const socket = io(SERVER_URL);
 
         let gameStarted = false;
         let players = {};
-        let bullets = {};
+        let myBullets = []; // Client-side only
         let myPos = { x: 1000, y: 1000, angle: 0, name: "" };
         let mousePos = { x: 0, y: 0 };
         const keys = {};
         const MAP_SIZE = 2000;
 
         socket.on('update', data => {
-            players = data.players || {};
-            bullets = data.bullets || {};
+            players = data || {};
             updateLeaderboard();
         });
 
@@ -58,7 +61,13 @@
         
         window.onmousedown = () => {
             if (!gameStarted) return;
-            socket.emit('fire', { x: myPos.x, y: myPos.y, angle: myPos.angle });
+            myBullets.push({
+                x: myPos.x,
+                y: myPos.y,
+                angle: myPos.angle,
+                speed: 15,
+                life: 100
+            });
         };
 
         setInterval(() => {
@@ -73,12 +82,25 @@
             myPos.x = Math.max(0, Math.min(MAP_SIZE, myPos.x + moveX));
             myPos.y = Math.max(0, Math.min(MAP_SIZE, myPos.y + moveY));
             
+            for (let i = myBullets.length - 1; i >= 0; i--) {
+                let b = myBullets[i];
+                b.x += Math.cos(b.angle) * b.speed;
+                b.y += Math.sin(b.angle) * b.speed;
+                b.life--;
+                if (b.life <= 0) myBullets.splice(i, 1);
+            }
+
             socket.emit('move', { x: myPos.x, y: myPos.y, angle: myPos.angle });
         }, 16);
 
         function updateLeaderboard() {
             let sorted = Object.values(players).sort((a, b) => b.score - a.score).slice(0, 5);
-            lbElement.innerHTML = sorted.map(p => `<div>${p.name}: ${Math.floor(p.score)}</div>`).join('');
+            lbElement.innerHTML = sorted.map(p => `
+                <div class="lb-item">
+                    <span class="lb-name">${p.name}</span>
+                    <span class="lb-score">${Math.floor(p.score)}</span>
+                </div>
+            `).join('');
         }
 
         function render() {
@@ -96,19 +118,19 @@
                 ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(MAP_SIZE, i); ctx.stroke();
             }
 
-            for (let id in bullets) {
-                const b = bullets[id];
-                ctx.fillStyle = "#ff4444";
+            ctx.fillStyle = "#ff4444";
+            myBullets.forEach(b => {
                 ctx.beginPath();
                 ctx.arc(b.x, b.y, 5, 0, Math.PI * 2);
                 ctx.fill();
-            }
+            });
 
             for (let id in players) {
                 const p = players[id];
-                const drawX = id === socket.id ? myPos.x : p.x;
-                const drawY = id === socket.id ? myPos.y : p.y;
-                const drawA = id === socket.id ? myPos.angle : p.angle;
+                const isMe = id === socket.id;
+                const drawX = isMe ? myPos.x : p.x;
+                const drawY = isMe ? myPos.y : p.y;
+                const drawA = isMe ? myPos.angle : p.angle;
 
                 ctx.save();
                 ctx.translate(drawX, drawY);
@@ -122,7 +144,8 @@
                 
                 ctx.fillStyle = "white";
                 ctx.textAlign = "center";
-                ctx.fillText(p.name, drawX, drawY - 25);
+                ctx.font = "14px sans-serif";
+                ctx.fillText(p.name, drawX, drawY - 30);
             }
 
             ctx.restore();
