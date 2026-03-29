@@ -1,31 +1,184 @@
-const express = require('express');
-const app = express();
-const server = require('http').createServer(app);
-const io = require('socket.io')(server, { cors: { origin: "*" } });
+<!DOCTYPE html>
+<html>
+<head>
+<title>Sporld IO</title>
+<style>
+body { margin: 0; background: #1a1a1a; overflow: hidden; font-family: sans-serif; color: white; touch-action: none; }
+canvas { display: block; width: 100vw; height: 100vh; }
+#ui-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 10;
+}
+.menu {
+    background: #222; padding: 40px; border-radius: 15px; text-align: center;
+    border: 2px solid #444; box-shadow: 0 0 30px rgba(0,0,0,0.5);
+}
+input:not([type="checkbox"]) {
+    padding: 12px; font-size: 18px; border-radius: 5px; border: 2px solid #555;
+    background: #111; color: white; width: 200px; margin-bottom: 20px; outline: none;
+}
+button {
+    padding: 12px 40px; font-size: 18px; background: #008cff; color: white;
+    border: none; border-radius: 5px; cursor: pointer; font-weight: bold;
+}
+button:hover { background: #0072d1; }
+#status { margin-top: 15px; font-size: 12px; color: #888; }
+#leaderboard {
+    position: fixed; top: 20px; right: 20px; background: rgba(0, 0, 0, 0.4); 
+    padding: 12px 15px 18px 15px; border-radius: 5px; border: 1px solid rgba(255, 255, 255, 0.1);
+    min-width: 140px; pointer-events: none; z-index: 5;
+}
+.lb-item { display: flex; justify-content: space-between; font-size: 14px; padding: 4px 0; }
+</style>
+</head>
+<body>
+<div id="ui-overlay">
+    <div class="menu">
+        <input type="text" id="nickInput" placeholder="Nickname" maxlength="10">
+        <div style="margin-bottom: 20px; font-size: 14px; color: #bbb;">
+            <input type="checkbox" id="joyCheck" style="width: auto; margin: 0; vertical-align: middle;">
+            <label for="joyCheck" style="margin-left: 8px;">Enable Mobile Joystick</label>
+        </div>
+        <button id="playBtn">Join game</button>
+        <div id="status">Connecting...</div>
+    </div>
+</div>
+<div id="leaderboard"></div>
+<canvas id="canvas"></canvas>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const ui = document.getElementById('ui-overlay');
+const statusText = document.getElementById('status');
+const nickInput = document.getElementById('nickInput');
+const lbElement = document.getElementById('leaderboard');
 
-const players = {};
+const socket = io(window.location.hostname === "localhost" ? 'http://localhost:3000' : 'https://sporld-server.onrender.com');
 
-io.on('connection', (socket) => {
-    players[socket.id] = { x: 1000, y: 1000, angle: 0, name: "Guest", score: 0 };
-    
-    socket.on('join', name => { 
-        if (players[socket.id]) players[socket.id].name = name; 
-    });
-    
-    socket.on('move', data => { 
-        if (players[socket.id]) {
-            players[socket.id].x = data.x;
-            players[socket.id].y = data.y;
-            players[socket.id].angle = data.angle;
-        } 
-    });
-    
-    socket.on('disconnect', () => { delete players[socket.id]; });
+let gameStarted = false;
+let players = {};
+let myBullets = [];
+let myPos = { x: 1000, y: 1000, angle: 0, name: "" };
+let mousePos = { x: 0, y: 0 };
+const keys = {};
+const MAP_SIZE = 2000;
+
+socket.on('connect', () => { 
+    statusText.innerText = "Connected"; 
+    statusText.style.color = "#00ff00"; 
 });
 
+socket.on('update', data => { 
+    players = data || {}; 
+    updateLeaderboard();
+});
+
+document.getElementById('playBtn').onclick = () => {
+    myPos.name = nickInput.value.trim() || "Guest";
+    socket.emit('join', myPos.name);
+    ui.style.display = 'none';
+    gameStarted = true;
+};
+
+window.onkeydown = e => keys[e.key.toLowerCase()] = true;
+window.onkeyup = e => keys[e.key.toLowerCase()] = false;
+window.onmousemove = e => { mousePos.x = e.clientX; mousePos.y = e.clientY; };
+window.onmousedown = () => {
+    if (!gameStarted) return;
+    myBullets.push({ x: myPos.x, y: myPos.y, angle: myPos.angle, speed: 15, life: 100 });
+};
+
 setInterval(() => {
-    for (let id in players) players[id].score += 0.01;
-    io.emit('update', players);
+    if (!gameStarted) return;
+    let moveX = 0, moveY = 0;
+    if (keys.w || keys.arrowup) moveY -= 5;
+    if (keys.s || keys.arrowdown) moveY += 5;
+    if (keys.a || keys.arrowleft) moveX -= 5;
+    if (keys.d || keys.arrowright) moveX += 5;
+
+    myPos.angle = Math.atan2(mousePos.y - window.innerHeight / 2, mousePos.x - window.innerWidth / 2);
+    myPos.x = Math.max(0, Math.min(MAP_SIZE, myPos.x + moveX));
+    myPos.y = Math.max(0, Math.min(MAP_SIZE, myPos.y + moveY));
+    
+    for (let i = myBullets.length - 1; i >= 0; i--) {
+        let b = myBullets[i];
+        b.x += Math.cos(b.angle) * b.speed;
+        b.y += Math.sin(b.angle) * b.speed;
+        b.life--;
+        if (b.life <= 0) myBullets.splice(i, 1);
+    }
+    socket.emit('move', { x: myPos.x, y: myPos.y, angle: myPos.angle });
 }, 16);
 
-server.listen(process.env.PORT || 3000);
+function updateLeaderboard() {
+    let sorted = Object.values(players).sort((a, b) => b.score - a.score).slice(0, 5);
+    lbElement.innerHTML = sorted.map(p => `<div class="lb-item"><span>${p.name || "Guest"}</span><span>${Math.floor(p.score || 0)}</span></div>`).join('');
+}
+
+function drawPlayer(x, y, angle, name, color) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.fillStyle = color;
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 6;
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    ctx.moveTo(25, 0); 
+    ctx.lineTo(-20, 22); 
+    ctx.lineTo(-20, -22);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle = "white";
+    ctx.textAlign = "center";
+    ctx.font = "bold 14px sans-serif";
+    ctx.fillText(name, x, y - 45);
+}
+
+function render() {
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = window.innerWidth * dpr;
+    canvas.height = window.innerHeight * dpr;
+    ctx.scale(dpr, dpr);
+    
+    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    
+    if (!gameStarted) { 
+        requestAnimationFrame(render); 
+        return; 
+    }
+
+    ctx.save();
+    ctx.translate(window.innerWidth / 2 - myPos.x, window.innerHeight / 2 - myPos.y);
+
+    ctx.strokeStyle = "#333";
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= MAP_SIZE; i += 100) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, MAP_SIZE); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(MAP_SIZE, i); ctx.stroke();
+    }
+
+    ctx.fillStyle = "#ff4444";
+    myBullets.forEach(b => {
+        ctx.beginPath(); ctx.arc(b.x, b.y, 5, 0, Math.PI * 2); ctx.fill();
+    });
+
+    Object.keys(players).forEach(id => {
+        if (id !== socket.id) {
+            const p = players[id];
+            drawPlayer(p.x, p.y, p.angle, p.name || "Guest", "rgba(255,255,255,0.8)");
+        }
+    });
+
+    drawPlayer(myPos.x, myPos.y, myPos.angle, myPos.name, "#008cff");
+
+    ctx.restore();
+    requestAnimationFrame(render);
+}
+render();
+</script>
+</body>
+</html>
