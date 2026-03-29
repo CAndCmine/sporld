@@ -37,7 +37,7 @@
 
         let gameStarted = false;
         let players = {};
-        let myBullets = []; // Client-side only
+        let myBullets = [];
         let myPos = { x: 1000, y: 1000, angle: 0, name: "" };
         let mousePos = { x: 0, y: 0 };
         const keys = {};
@@ -124,6 +124,7 @@
                 ctx.arc(b.x, b.y, 5, 0, Math.PI * 2);
                 ctx.fill();
             });
+
 
             for (let id in players) {
                 const p = players[id];
