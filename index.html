@@ -15,7 +15,7 @@
         const ctx = canvas.getContext('2d');
         const socket = io('https://sporld-server.onrender.com'); 
 
-        const myName = prompt("Nickname:") || "Guest";
+        const myName = prompt("Type your nickname:") || "Guest";
         socket.emit('join', myName);
 
         let players = {};
