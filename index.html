@@ -69,9 +69,10 @@ setInterval(() => {
     });
 }, 16);
 
+// Make sure we safely grab the objects sent by the server
 socket.on('update', data => {
-    players = data.players || {};
-    bullets = data.bullets || [];
+    if (data.players) players = data.players;
+    if (data.bullets) bullets = data.bullets;
 });
 
 function renderPlayer(x, y, angle, color, name) {
@@ -79,6 +80,7 @@ function renderPlayer(x, y, angle, color, name) {
     ctx.translate(x, y);
     ctx.rotate(angle);
 
+    // Draw the ship triangle
     ctx.beginPath();
     ctx.moveTo(PLAYER_LENGTH, 0);
     ctx.lineTo(-PLAYER_WIDTH, PLAYER_WIDTH);
@@ -94,6 +96,7 @@ function renderPlayer(x, y, angle, color, name) {
     ctx.fill();
     ctx.restore();
 
+    // Draw the name tag
     ctx.fillStyle = "white";
     ctx.font = "bold 14px Arial";
     ctx.textAlign = "center";
@@ -104,8 +107,10 @@ function render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     ctx.save();
+    // Center camera on myPos
     ctx.translate(canvas.width / 2 - myPos.x, canvas.height / 2 - myPos.y);
 
+    // Draw Grid
     ctx.strokeStyle = "#333";
     ctx.lineWidth = 1;
     for (let i = 0; i <= MAP_SIZE; i += 100) {
@@ -113,10 +118,12 @@ function render() {
         ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(MAP_SIZE, i); ctx.stroke();
     }
 
+    // Draw Map Borders
     ctx.strokeStyle = "white";
     ctx.lineWidth = 4;
     ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
 
+    // Draw Bullets
     ctx.fillStyle = "#ff0";
     bullets.forEach(b => {
         ctx.beginPath();
@@ -124,17 +131,16 @@ function render() {
         ctx.fill();
     });
 
+    // Draw OTHER players (red)
     for (let id in players) {
-        const p = players[id];
-        const isMe = (id === socket.id);
+        if (id === socket.id) continue; // Skip ourselves in this loop
         
-        const renderX = isMe ? myPos.x : p.x;
-        const renderY = isMe ? myPos.y : p.y;
-        const renderA = isMe ? myPos.angle : (p.angle || 0);
-        const color = isMe ? "#00ff00" : "#ff4444";
-
-        renderPlayer(renderX, renderY, renderA, color, p.name || "Guest");
+        const p = players[id];
+        renderPlayer(p.x, p.y, p.angle || 0, "#ff4444", p.name || "Guest");
     }
+
+    // ALWAYS draw MY player (green) on top
+    renderPlayer(myPos.x, myPos.y, myPos.angle, "#00ff00", myName);
 
     ctx.restore();
     requestAnimationFrame(render);
