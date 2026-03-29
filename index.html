@@ -7,14 +7,14 @@ body { margin: 0; background: #1a1a1a; overflow: hidden; font-family: sans-serif
 canvas { display: block; width: 100vw; height: 100vh; }
 #ui-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 10;
+    background: rgba(0,0,0,0); display: flex; align-items: center; justify-content: center; z-index: 10;
 }
 .menu {
     background: #222; padding: 40px; border-radius: 15px; text-align: center;
     border: 2px solid #444; box-shadow: 0 0 30px rgba(0,0,0,0.5);
 }
 input {
-    padding: 12px; font-size: 18px; border-radius: 5px; border: 1px solid #555;
+    padding: 12px; font-size: 18px; border-radius: 5px; border: 2px solid #555;
     background: #111; color: white; width: 200px; margin-bottom: 20px; outline: none;
 }
 button {
@@ -29,7 +29,6 @@ button:hover { background: #0072d1; }
 
 <div id="ui-overlay">
     <div class="menu">
-        <h1>SPORLD.IO</h1>
         <input type="text" id="nickInput" placeholder="Nickname" maxlength="10">
         <br>
         <button id="playBtn">PLAY</button>
@@ -58,11 +57,11 @@ let players = {};
 let myPos = { x: 1000, y: 1000, angle: 0 };
 let mousePos = { x: 0, y: 0 };
 const keys = {};
-const MAP_SIZE = 2000;
+const MAP_SIZE = 500;
 
 socket.on('connect', () => { 
     statusText.innerText = "Connected"; 
-    statusText.style.color = "#4CAF50"; 
+    statusText.style.color = "rgb(255, 255, 255)"; 
 });
 
 socket.on('connect_error', () => { 
@@ -122,9 +121,9 @@ function drawPlayer(x, y, angle, color, name) {
     ctx.restore();
 
     ctx.fillStyle = "white";
-    ctx.font = "bold 14px Arial";
+    ctx.font = "12px Arial";
     ctx.textAlign = "center";
-    ctx.fillText(name, x, y - 30);
+    ctx.fillText(name, x, y - 35);
 }
 
 function render() {
@@ -135,32 +134,37 @@ function render() {
     
     ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
-    if (gameStarted) {
-        ctx.save();
-        ctx.translate(window.innerWidth / 2 - myPos.x, window.innerHeight / 2 - myPos.y);
+    ctx.save();
+    ctx.translate(window.innerWidth / 2 - myPos.x, window.innerHeight / 2 - myPos.y);
 
-        ctx.strokeStyle = "#333";
-        ctx.lineWidth = 1;
-        for (let i = 0; i <= MAP_SIZE; i += 100) {
-            ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, MAP_SIZE); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(MAP_SIZE, i); ctx.stroke();
-        }
-
-        ctx.strokeStyle = "white";
-        ctx.lineWidth = 5;
-        ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
-
-        for (let id in players) {
-            if (id !== socket.id) {
-                const p = players[id];
-                drawPlayer(p.x, p.y, p.angle, "#ff4444", p.name || "Guest");
-            }
-        }
-
-        drawPlayer(myPos.x, myPos.y, myPos.angle, "#008cff", nickInput.value || "Guest");
-
-        ctx.restore();
+    ctx.strokeStyle = "rgb(0, 0, 0, 0.2)";
+    ctx.lineWidth = ;
+    for (let i = 0; i <= MAP_SIZE; i += 100) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, MAP_SIZE); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(MAP_SIZE, i); ctx.stroke();
     }
+  
+    ctx.strokeStyle = "#33";
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= MAP_SIZE; i += 100) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, MAP_SIZE); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(MAP_SIZE, i); ctx.stroke();
+    }
+
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(0, 0, MAP_SIZE, MAP_SIZE);
+
+    for (let id in players) {
+        if (id !== socket.id) {
+            const p = players[id];
+            drawPlayer(p.x, p.y, p.angle, "#ff4444", p.name || "Guest");
+        }
+    }
+
+    drawPlayer(myPos.x, myPos.y, myPos.angle, "#008cff", nickInput.value || "Guest");
+
+    ctx.restore();
     requestAnimationFrame(render);
 }
 render();
