@@ -1,147 +1,22 @@
- <!DOCTYPE html>
+<!-- public/index.html -->
+<!doctype html>
 <html>
 <head>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap" rel="stylesheet">
+  <meta charset="utf-8" />
   <title>Sporld IO</title>
   <style>
-    body {
-      font-family: "Ubuntu", sans-serif;
-      font-weight: 700;
-      font-style: normal;
-    }
-    body {
-      margin: 0;
-      background: #1a1a1a;
-      overflow: hidden;
-      font-family: sans-serif;
-      color: white;
-      touch-action: none;
-    }
-    canvas {
-      display: block;
-      width: 100vw;
-      height: 100vh;
-    }
-    #ui-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.6);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10;
-    }
-    .menu {
-      background-color: rgb(255, 255, 255, 0);
-      padding: 40px;
-      border-radius: 10px;
-      text-align: center;
-      font-family: "Ubuntu", sans-serif;
-      font-weight: 700;
-      font-style: normal;
-      width: 600px;
-    }
-    #nickInput {
-      font-family: "Ubuntu", sans-serif;
-      font-weight: 700;
-      font-style: normal;
-      padding: 12px;
-      font-size: 18px;
-      border-radius: 5px;
-      border: 2px solid rgb(160, 160, 160);
-      background: rgb(200, 200, 200);
-      color: black;
-      width: 200px;
-      margin-bottom: 20px;
-      outline: none;
-    }
-    #nickInput::placeholder {
-      transition: opacity 0.3s;
-      opacity: 1;
-    }
-    #nickInput:hover::placeholder,
-    #nickInput:focus::placeholder,
-    #nickInput:active::placeholder {
-      opacity: 0;
-    }
-    button {
-      font-family: "Ubuntu", sans-serif;
-      font-weight: 700;
-      font-style: normal;
-      padding: 12px 32px;
-      font-size: 18px;
-      background: rgb(50, 150, 50);
-      color: white;
-      border: 2px solid rgba(10, 115, 10, 1);
-      border-radius: 5px;
-      cursor: pointer;
-      text-shadow: 0px 1.5px 0px rgb(0, 0, 0, 0.5);
-    }
-    button:hover {
-      background: rgb(50, 135, 50, 0.9)
-    }
-    #status {
-      margin-top: 15px;
-      font-size: 10px;
-      color: rgba(255, 255, 255, 0.8);
-    }
-    #joystick-container {
-      position: fixed;
-      bottom: 50px;
-      left: 50px;
-      width: 120px;
-      height: 120px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 50%;
-      display: none;
-      touch-action: none;
-      z-index: 5;
-      border: 2px solid rgba(255, 255, 255, 0.2);
-    }
-    #joystick-knob {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 50px;
-      height: 50px;
-      background: white;
-      border-radius: 50%;
-      transform: translate(-50%, -50%);
-      opacity: 0.5;
-    }
-    #leaderboard {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: rgba(0, 0, 0, 0);
-      padding: 12px 15px 18px 15px;
-      border-radius: 5px;
-      min-width: 140px;
-      pointer-events: none;
-      z-index: 5;
-    }
-    .lb-item {
-      display: flex;
-      justify-content: space-between;
-      font-size: 14px;
-      padding: 4px 0;
-      font-weight: normal;
-    }
-    .lb-name {
-      margin-right: 20px;
-      color: rgba(255, 255, 255, 0.9);
-    }
-    .lb-score {
-      color: rgba(255, 255, 255, 0.6);
-    }
+    html,body{margin:0;height:100%;background:#1a1a1a;color:#fff;font-family:Ubuntu,Arial,sans-serif;touch-action:none}
+    canvas{display:block;width:100vw;height:100vh}
+    #ui-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:10}
+    .menu{padding:40px;border-radius:10px;text-align:center;width:600px}
+    #nickInput{padding:12px;font-size:18px;border-radius:5px;border:2px solid #a0a0a0;background:#c8c8c8;color:#000;width:200px;margin-bottom:20px;outline:none}
+    button{padding:12px 32px;font-size:18px;background:#329632;color:#fff;border:2px solid rgba(10,115,10,1);border-radius:5px;cursor:pointer}
+    #status{margin-top:15px;font-size:12px;color:rgba(255,255,255,0.9)}
+    #leaderboard{position:fixed;top:20px;right:20px;z-index:5}
   </style>
 </head>
 <body>
+  <canvas id="canvas"></canvas>
   <div id="ui-overlay">
     <div class="menu">
       <div id="status">Connecting to server...</div>
@@ -151,19 +26,15 @@
     </div>
   </div>
   <div id="leaderboard"></div>
-  <div id="joystick-container">
-    <div id="joystick-knob"></div>
-  </div>
-  <canvas id="canvas"></canvas>
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
   <script>
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     const statusText = document.getElementById('status');
     const nickInput = document.getElementById('nickInput');
     const playBtn = document.getElementById('playBtn');
-    const SERVER_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" ? 'http://localhost:3000' : 'https://sporld-server.onrender.com';
-    const socket = io(SERVER_URL);
+    const uiOverlay = document.getElementById('ui-overlay');
+    const socket = io();
     let gameStarted = false;
     let players = {};
     let bullets = [];
@@ -172,8 +43,15 @@
     const mousePos = { x: window.innerWidth/2, y: window.innerHeight/2 };
     const keys = {};
     socket.on('connect', () => { statusText.innerText = 'Connected'; });
+    socket.on('disconnect', () => { statusText.innerText = 'Disconnected'; });
     socket.on('state', data => { if (data.players) players = data.players; if (data.bullets) bullets = data.bullets; });
-    playBtn.onclick = () => { const name = nickInput.value.trim() || 'Guest'; myPos.name = name; socket.emit('join', name); gameStarted = true; };
+    playBtn.onclick = () => {
+      const name = nickInput.value.trim() || 'Guest';
+      myPos.name = name;
+      socket.emit('join', name);
+      gameStarted = true;
+      uiOverlay.style.display = 'none';
+    };
     window.addEventListener('mousemove', e => { mousePos.x = e.clientX; mousePos.y = e.clientY; });
     window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
     window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
@@ -191,7 +69,7 @@
     }, 50);
     let lastFire = 0;
     const FIRE_COOLDOWN = 200;
-    window.addEventListener('pointerdown', e => {
+    window.addEventListener('pointerdown', () => {
       if (!gameStarted) return;
       const now = Date.now();
       if (now - lastFire < FIRE_COOLDOWN) return;
@@ -201,10 +79,8 @@
       socket.emit('fire', { x: myPos.x, y: myPos.y, angle });
     });
     function resize() {
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = window.innerWidth * dpr;
-      canvas.height = window.innerHeight * dpr;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
     }
     window.addEventListener('resize', resize);
     resize();
@@ -264,9 +140,8 @@
         b.life--;
         if (b.life <= 0) bullets.splice(i, 1);
       }
-      const serverBullets = [];
-      for (const id in bullets) {}
-      if (Array.isArray(bullets)) {}
-    }, 16);  </script>
+      if (Array.isArray(bullets) && Array.isArray((window.serverBullets || []))) {}
+    }, 16);
+  </script>
 </body>
 </html>
